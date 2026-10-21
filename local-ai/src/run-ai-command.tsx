@@ -62,9 +62,7 @@ function RunCommandAction(props: { command: AiCommand; input?: RunInput }) {
     if (!input) return showToast({ style: Toast.Style.Failure, title: NO_INPUT_MESSAGE });
     const specs = parsePrompt(command.prompt).arguments;
     const runWith = (argumentValues: Record<string, string>) =>
-      command.output === "replace"
-        ? replaceInPreviousApp(command, input, argumentValues)
-        : push(<ResultView command={command} input={input} argumentValues={argumentValues} />);
+      push(<ResultView command={command} input={input} argumentValues={argumentValues} />);
     if (specs.length === 0) return runWith({});
     push(<ArgumentForm command={command} specs={specs} onSubmit={runWith} />);
   }
