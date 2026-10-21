@@ -35,7 +35,7 @@ export function CommandForm(props: { command?: AiCommand; onSaved?: (command: Ai
   const [errors, setErrors] = useState<{ name?: string; prompt?: string }>({});
 
   const modelMissing = models.length > 0 && !models.includes(model);
-  const modelChoices = modelMissing ? [model, ...models] : models;
+  const modelChoices = modelMissing || models.length === 0 ? [model, ...models] : models;
   const unsupported = parsePrompt(prompt).unsupported;
 
   async function submit(values: FormValues) {
