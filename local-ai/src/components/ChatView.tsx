@@ -2,6 +2,7 @@ import { Action, ActionPanel, Icon, List, showToast, Toast, useNavigation } from
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { conversationToText, turnToMarkdown } from "../lib/chats/format";
 import { appendMessage, toTurns } from "../lib/chats/operations";
 import { buildChatInstructions, buildChatStdin, replayContent } from "../lib/chats/transcript";
 import type { Chat, ChatMessage } from "../lib/chats/types";
@@ -35,6 +36,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
   const [pendingImage, setPendingImage] = useState<string>();
   const [framingTokens, setFramingTokens] = useState(0);
   const [isSending, setIsSending] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>();
   const sendingRef = useRef(false);
   const chatRef = useRef(chat);
   const controllerRef = useRef<AbortController | undefined>(undefined);
@@ -142,6 +144,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         return;
       }
       submitted = true;
+      setSelectedId(userMessage.id);
       setStreaming({ userId: userMessage.id, text: "" });
 
       const output = await respond(stdin, {
@@ -208,6 +211,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         shortcut={{ modifiers: ["cmd"], key: "i" }}
         onAction={() => push(<AttachImageForm onAttach={setPendingImage} />)}
       />
+      {turns.length > 0 && <Action.CopyToClipboard title="Copy Conversation" content={conversationToText(turns)} />}
       {pendingImage && (
         <Action title="Remove Attached Image" icon={Icon.XMarkCircle} onAction={() => setPendingImage(undefined)} />
       )}
@@ -224,15 +228,23 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
       navigationTitle={`${chat.title} · Context ${percent}%`}
       isShowingDetail={turns.length > 0}
       filtering={false}
-      searchBarPlaceholder={pendingImage ? `Type a message (image: ${path.basename(pendingImage)})` : "Type a message"}
+      searchBarPlaceholder={
+        pendingImage ? `Ask a question... (image: ${path.basename(pendingImage)})` : "Ask a question..."
+      }
+      selectedItemId={selectedId}
+      onSelectionChange={(id) => setSelectedId(id ?? undefined)}
       searchText={composer}
       onSearchTextChange={setComposer}
       isLoading={isBusy}
     >
       {turns.length === 0 && (
         <List.EmptyView
-          title="Start the conversation"
-          description="Type a message, then choose Send Message."
+          title="Start a conversation"
+          description={
+            chat.instructions
+              ? `Answers run on-device. Instructions: ${chat.instructions}`
+              : "Type a question below. Answers run on-device."
+          }
           actions={
             <ActionPanel>
               {canSend && <Action title="Send Message" icon={Icon.Message} onAction={() => send(composer)} />}
@@ -241,15 +253,18 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
           }
         />
       )}
-      {turns.map((turn) => {
+      {[...turns].reverse().map((turn) => {
         const isPending = streaming?.userId === turn.user.id;
-        const answer = isPending ? streaming.text : turn.assistant?.content;
         return (
           <List.Item
             key={turn.user.id}
             id={turn.user.id}
-            title={turn.user.content}
-            detail={<List.Item.Detail markdown={answer || (isPending ? "_Thinking..._" : "_No answer._")} />}
+            title={turn.user.content.replace(/\s+/g, " ").trim()}
+            icon={isPending ? Icon.CircleProgress : Icon.Person}
+            accessories={turn.user.imagePath ? [{ icon: Icon.Image, tooltip: "Image attached" }] : []}
+            detail={
+              <List.Item.Detail markdown={turnToMarkdown(turn, isPending ? streaming.text : undefined, isPending)} />
+            }
             actions={
               <ActionPanel>
                 {canSend && <Action title="Send Message" icon={Icon.Message} onAction={() => send(composer)} />}
