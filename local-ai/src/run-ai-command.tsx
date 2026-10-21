@@ -1,4 +1,14 @@
-import { Action, Detail, Icon, List, showToast, Toast, useNavigation, type LaunchProps } from "@raycast/api";
+import {
+  Action,
+  closeMainWindow,
+  Detail,
+  Icon,
+  List,
+  showToast,
+  Toast,
+  useNavigation,
+  type LaunchProps,
+} from "@raycast/api";
 import { useEffect, useState } from "react";
 import { ArgumentForm } from "./components/ArgumentForm";
 import { CommandList } from "./components/CommandList";
@@ -10,6 +20,7 @@ import { isRunViewLaunchContext, type RunInput, type RunViewLaunchContext } from
 import { parsePrompt } from "./lib/placeholders";
 import { NO_INPUT_MESSAGE, resolveLaunchTarget } from "./lib/run-request";
 import { captureInput } from "./services/input";
+import { replaceSelection } from "./services/paste";
 
 export default function Command(props: LaunchProps) {
   const context = isRunViewLaunchContext(props.launchContext) ? props.launchContext : undefined;
@@ -49,16 +60,12 @@ function RunCommandAction(props: { command: AiCommand; input?: RunInput }) {
   function run() {
     if (!input) return showToast({ style: Toast.Style.Failure, title: NO_INPUT_MESSAGE });
     const specs = parsePrompt(command.prompt).arguments;
-    if (specs.length === 0) return push(<ResultView command={command} input={input} argumentValues={{}} />);
-    push(
-      <ArgumentForm
-        command={command}
-        specs={specs}
-        onSubmit={(argumentValues) =>
-          push(<ResultView command={command} input={input} argumentValues={argumentValues} />)
-        }
-      />,
-    );
+    const runWith = (argumentValues: Record<string, string>) =>
+      command.output === "replace"
+        ? replaceInPreviousApp(command, input, argumentValues)
+        : push(<ResultView command={command} input={input} argumentValues={argumentValues} />);
+    if (specs.length === 0) return runWith({});
+    push(<ArgumentForm command={command} specs={specs} onSubmit={runWith} />);
   }
 
   return <Action title="Run Command" icon={Icon.Play} onAction={run} />;
@@ -74,9 +81,24 @@ function DirectRun(props: { context: RunViewLaunchContext; input?: RunInput }) {
   if (!props.input) return <Detail markdown={`# ${NO_INPUT_MESSAGE}`} />;
 
   const { command } = target;
+  const input = props.input;
   const specs = parsePrompt(command.prompt).arguments;
+  if (specs.length > 0 && command.output === "replace") {
+    return (
+      <ArgumentForm
+        command={command}
+        specs={specs}
+        onSubmit={(values) => replaceInPreviousApp(command, input, values)}
+      />
+    );
+  }
   if (specs.length > 0 && !argumentValues) {
     return <ArgumentForm command={command} specs={specs} onSubmit={setArgumentValues} />;
   }
-  return <ResultView command={command} input={props.input} argumentValues={argumentValues ?? {}} />;
+  return <ResultView command={command} input={input} argumentValues={argumentValues ?? {}} />;
+}
+
+async function replaceInPreviousApp(command: AiCommand, input: RunInput, argumentValues: Record<string, string>) {
+  await closeMainWindow();
+  await replaceSelection(command, input, argumentValues);
 }
