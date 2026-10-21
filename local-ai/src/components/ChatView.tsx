@@ -1,13 +1,19 @@
-import { Action, ActionPanel, Detail, Icon, showToast, Toast, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon, Keyboard, showToast, Toast, useNavigation } from "@raycast/api";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { conversationToMarkdown, conversationToText, type StreamingAnswer } from "../lib/chats/format";
+import {
+  conversationToMarkdown,
+  conversationToText,
+  type ChatFailure,
+  type StreamingAnswer,
+} from "../lib/chats/format";
 import { appendMessage, toTurns } from "../lib/chats/operations";
 import { buildChatInstructions, buildChatStdin, replayContent } from "../lib/chats/transcript";
 import type { Chat, ChatMessage } from "../lib/chats/types";
 import { countTokens, respond } from "../lib/fm/client";
 import { tooLongMessage } from "../lib/fm/errors";
+import { explainFmError } from "../lib/fm/explain";
 import { finalizeWindowText, stripSpeakerLabel } from "../lib/output";
 import {
   ANSWER_RESERVE_TOKENS,
@@ -19,7 +25,7 @@ import {
   selectHistory,
 } from "../lib/tokens";
 import { getSettings } from "../services/settings";
-import { showFmErrorToast } from "../services/errors";
+import { showFmErrorToast, toFmError } from "../services/errors";
 import { AttachImageForm } from "./AttachImageForm";
 import { ChatComposer } from "./ChatComposer";
 import { ChatSettingsForm } from "./ChatSettingsForm";
@@ -29,6 +35,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
   const [chat, setChat] = useState(props.chat);
   const [composer, setComposer] = useState("");
   const [streaming, setStreaming] = useState<StreamingAnswer>();
+  const [failure, setFailure] = useState<ChatFailure>();
   const [pendingImage, setPendingImage] = useState<string>();
   const [framingTokens, setFramingTokens] = useState(0);
   const [isSending, setIsSending] = useState(false);
@@ -62,10 +69,14 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
     if (sendingRef.current) return;
     sendingRef.current = true;
     setIsSending(true);
+    setFailure(undefined);
     const content = text.trim();
     const imagePath = pendingImage;
     setComposer("");
     let submitted = false;
+    let answered = false;
+    let userMessageId: string | undefined;
+    let partial = "";
     if (imagePath && !existsSync(imagePath)) {
       setPendingImage(undefined);
       setComposer((current) => current || text);
@@ -139,6 +150,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         return;
       }
       submitted = true;
+      userMessageId = userMessage.id;
       setStreaming({ userId: userMessage.id, text: "" });
 
       const output = await respond(stdin, {
@@ -152,6 +164,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         timeoutMs,
         signal,
         onText: (accumulated) => {
+          partial = accumulated;
           if (!signal.aborted) setStreaming({ userId: userMessage.id, text: accumulated });
         },
       });
@@ -165,6 +178,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         createdAt: answeredAt,
       };
       await commit(appendMessage(chatRef.current, assistantMessage, answeredAt));
+      answered = true;
       setStreaming(undefined);
 
       const answerTokens = await countMessage(answer, framing).catch(() => undefined);
@@ -176,7 +190,30 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         });
       }
     } catch (error) {
-      if (!signal.aborted) await showFmErrorToast(error);
+      const fmError = toFmError(error);
+      const { title, explanation } = explainFmError(fmError);
+      const keptText = answered ? "" : stripSpeakerLabel(finalizeWindowText(partial));
+      if (userMessageId && !answered) {
+        if (keptText) {
+          const interruptedAt = new Date().toISOString();
+          await commit(
+            appendMessage(
+              chatRef.current,
+              {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: keptText,
+                interruptedReason: title,
+                createdAt: interruptedAt,
+              },
+              interruptedAt,
+            ),
+          );
+        } else {
+          setFailure({ userId: userMessageId, title, explanation });
+        }
+      }
+      if (!signal.aborted) await showFmErrorToast(fmError);
     } finally {
       if (!submitted) setComposer((current) => current || text);
       setStreaming(undefined);
@@ -234,7 +271,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
   return (
     <Detail
       navigationTitle={`${chat.title} · Context ${percent}%`}
-      markdown={conversationToMarkdown(turns, streaming)}
+      markdown={conversationToMarkdown(turns, streaming, failure)}
       isLoading={isBusy}
       actions={
         <ActionPanel>
@@ -260,7 +297,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
             <Action
               title="New Chat"
               icon={Icon.Plus}
-              shortcut={{ modifiers: ["cmd"], key: "n" }}
+              shortcut={Keyboard.Shortcut.Common.New}
               onAction={props.onNewChat}
             />
           )}
@@ -269,7 +306,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
             <Action.CopyToClipboard
               title="Copy Last Answer"
               content={lastAnswer}
-              shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+              shortcut={Keyboard.Shortcut.Common.Copy}
             />
           )}
           {turns.length > 0 && <Action.CopyToClipboard title="Copy Conversation" content={conversationToText(turns)} />}

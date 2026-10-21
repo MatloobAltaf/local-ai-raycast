@@ -4,6 +4,7 @@ export interface ChatMessage {
   content: string;
   tokens?: number;
   imagePath?: string;
+  interruptedReason?: string;
   createdAt: string;
 }
 

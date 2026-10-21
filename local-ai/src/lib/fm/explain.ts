@@ -1,0 +1,49 @@
+import type { FmError } from "./errors";
+
+export interface FmErrorExplanation {
+  title: string;
+  explanation: string;
+}
+
+const CHECK_SETUP_HINT = "Open Check Setup to fix this.";
+const STOPPED_TITLE = "Stopped";
+
+export function explainFmError(error: FmError): FmErrorExplanation {
+  switch (error.kind) {
+    case "contextOverflow":
+      return {
+        title: "Too long for the on-device model",
+        explanation:
+          "The on-device model handles about 4,096 tokens per request, counting the text and the answer together. Try shorter text, ask for a shorter answer, or start a new chat.",
+      };
+    case "timeout":
+      return { title: "Timed out", explanation: error.message };
+    case "guardrail":
+      return {
+        title: "Stopped by the safety filter",
+        explanation: "The on-device model's safety filter stopped this answer. Rephrasing your request can help.",
+      };
+    case "aborted":
+      return { title: STOPPED_TITLE, explanation: "You stopped the answer." };
+    case "notInstalled":
+    case "license":
+    case "unavailable":
+      return { title: error.message, explanation: CHECK_SETUP_HINT };
+    case "invalidModel":
+      return { title: error.message, explanation: "The on-device model returned an error." };
+    case "unknown": {
+      const firstLine = error.detail?.split("\n")[0].trim();
+      return {
+        title: error.message,
+        explanation: firstLine
+          ? `The on-device model returned an error. ${firstLine}`
+          : "The on-device model returned an error.",
+      };
+    }
+  }
+}
+
+export function errorBlockMarkdown(title: string, explanation?: string): string {
+  const heading = title === STOPPED_TITLE ? "**Stopped**" : `**Stopped: ${title}**`;
+  return explanation ? `> ${heading}\n> ${explanation}` : `> ${heading}`;
+}

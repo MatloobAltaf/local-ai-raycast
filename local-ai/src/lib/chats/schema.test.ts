@@ -35,4 +35,19 @@ describe("migrateChatStore", () => {
     const result = migrateChatStore(JSON.stringify({ version: 1, chats: [chat, { title: "No id" }] }));
     expect(result).toMatchObject({ kind: "ok", changed: true, dropped: 1 });
   });
+
+  it("keeps the interrupted reason on an assistant message without rewriting the store", () => {
+    const interrupted = {
+      id: "m2",
+      role: "assistant",
+      content: "Par",
+      interruptedReason: "Stopped",
+      createdAt: message.createdAt,
+    };
+    const result = migrateChatStore(
+      JSON.stringify({ version: 1, chats: [{ ...chat, messages: [message, interrupted] }] }),
+    );
+    expect(result).toMatchObject({ kind: "ok", changed: false });
+    if (result.kind === "ok") expect(result.store.chats[0].messages[1].interruptedReason).toBe("Stopped");
+  });
 });

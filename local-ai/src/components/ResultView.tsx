@@ -2,7 +2,9 @@ import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { useFmStream } from "../hooks/useFmStream";
 import type { AiCommand } from "../lib/commands/types";
 import type { RunInput } from "../lib/launch-context";
+import { errorBlockMarkdown, explainFmError } from "../lib/fm/explain";
 import { finalizeWindowText } from "../lib/output";
+import { isSetupError } from "../services/errors";
 import { executeRun } from "../services/run";
 import { CommandForm } from "./CommandForm";
 import { ContinueInChatAction } from "./ContinueInChatAction";
@@ -17,14 +19,17 @@ export function ResultView(props: { command: AiCommand; input: RunInput; argumen
     [command, input, JSON.stringify(argumentValues)],
   );
 
-  if (error) return <FmErrorView error={error} onRetry={retry} />;
+  if (error && isSetupError(error)) return <FmErrorView error={error} onRetry={retry} />;
 
   const result = isLoading ? text : finalizeWindowText(text);
+  const failure = error ? explainFmError(error) : undefined;
+  const failureBlock = failure ? errorBlockMarkdown(failure.title, failure.explanation) : undefined;
+  const markdown = failureBlock ? (result ? `${result}\n\n${failureBlock}` : failureBlock) : result;
   return (
     <Detail
       navigationTitle={command.name}
       isLoading={isLoading}
-      markdown={result}
+      markdown={markdown}
       metadata={
         <Detail.Metadata>
           <Detail.Metadata.Label title="Command" text={command.name} />

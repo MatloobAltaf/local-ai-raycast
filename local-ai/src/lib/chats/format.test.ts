@@ -36,6 +36,23 @@ describe("turnToMarkdown", () => {
   });
 });
 
+describe("interrupted answers", () => {
+  it("renders the stored reason as an error block under the answer", () => {
+    const interrupted = turn("q", "partial");
+    interrupted.assistant!.interruptedReason = "Timed out";
+    expect(turnToMarkdown(interrupted)).toBe("**You**\n\n> q\n\n**Local AI**\n\npartial\n\n> **Stopped: Timed out**");
+  });
+
+  it("shows a live failure with its explanation under a question that got no answer", () => {
+    const markdown = conversationToMarkdown([turn("q")], undefined, {
+      userId: "u",
+      title: "Timed out",
+      explanation: "Too slow.",
+    });
+    expect(markdown.endsWith("_No answer._\n\n> **Stopped: Timed out**\n> Too slow.")).toBe(true);
+  });
+});
+
 describe("conversationToText", () => {
   it("joins turns oldest first in the You and Local AI format", () => {
     expect(conversationToText([turn("q1", "a1"), turn("q2")])).toBe(

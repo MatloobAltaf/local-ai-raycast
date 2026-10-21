@@ -1,5 +1,6 @@
 import { showToast, Toast } from "@raycast/api";
 import { FmError, SETUP_ERROR_KINDS } from "../lib/fm/errors";
+import { explainFmError } from "../lib/fm/explain";
 import { invalidatePreflight, launchCheckSetup } from "./preflight";
 
 export function toFmError(error: unknown): FmError {
@@ -19,7 +20,7 @@ export async function showFmErrorToast(error: unknown): Promise<void> {
 
   await showToast({
     style: Toast.Style.Failure,
-    title: fmError.message,
+    title: explainFmError(fmError).title,
     ...(setup && { primaryAction: { title: "Check Setup", onAction: () => launchCheckSetup() } }),
   });
 }

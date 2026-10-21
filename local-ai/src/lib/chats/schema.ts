@@ -51,6 +51,8 @@ function normalizeMessage(value: unknown, fallbackCreatedAt: string): ChatMessag
   }
   const imagePath = nonEmptyString(value.imagePath);
   if (imagePath) message.imagePath = imagePath;
+  const interruptedReason = nonEmptyString(value.interruptedReason);
+  if (interruptedReason && value.role === "assistant") message.interruptedReason = interruptedReason;
   return message;
 }
 
