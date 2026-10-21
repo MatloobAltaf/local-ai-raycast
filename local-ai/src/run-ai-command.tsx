@@ -18,10 +18,12 @@ export default function Command(props: LaunchProps) {
 
   useEffect(() => {
     if (captured) return;
-    captureInput().then((value) => {
-      setInput(value);
-      setCaptured(true);
-    });
+    captureInput()
+      .catch(() => undefined)
+      .then((value) => {
+        setInput(value);
+        setCaptured(true);
+      });
   }, []);
 
   if (!captured) return <List isLoading />;
