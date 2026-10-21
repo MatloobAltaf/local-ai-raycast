@@ -59,6 +59,19 @@ describe("renderInstructions", () => {
     );
   });
 
+  it("does not resolve argument names from the object prototype", () => {
+    expect(renderInstructions('{argument name="constructor"}', { ...ctx, argumentValues: {} })).toBe("");
+  });
+
+  it("falls back to the default when the value is blank", () => {
+    expect(
+      renderInstructions('Into {argument name="language" default="English"}', {
+        ...ctx,
+        argumentValues: { language: "" },
+      }),
+    ).toBe("Into English");
+  });
+
   it("falls back to the default value", () => {
     expect(
       renderInstructions('Into {argument name="language" default="English"}', { ...ctx, argumentValues: {} }),

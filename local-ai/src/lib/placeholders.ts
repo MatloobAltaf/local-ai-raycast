@@ -76,7 +76,8 @@ export function renderInstructions(prompt: string, ctx: RenderContext): string {
         return new Intl.DateTimeFormat(ctx.locale, { timeStyle: "short" }).format(ctx.now);
       case "argument": {
         const spec = toArgumentSpec(rest ?? "");
-        return ctx.argumentValues[spec.name] || spec.defaultValue || "";
+        const value = Object.hasOwn(ctx.argumentValues, spec.name) ? ctx.argumentValues[spec.name] : "";
+        return value || spec.defaultValue || "";
       }
       default:
         return whole;
