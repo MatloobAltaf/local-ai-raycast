@@ -5,7 +5,8 @@ export const PREAMBLE_PATTERNS: RegExp[] = [
 
 const MAX_PREAMBLE_LINE_LENGTH = 100;
 const REFUSAL_OPENING = /^(?:i'?m sorry|i am sorry|sorry|i can(?:no|')t|i cannot|i am unable|i'?m unable|as an ai)/i;
-const REFUSAL_SUBJECT = /help with|assist|comply|fulfill|this request|that request|as an ai|provide (?:that|this)/i;
+const REFUSAL_SUBJECT =
+  /help with (?:that|this)|assist|comply|fulfill|this request|that request|as an ai|provide (?:that|this)/i;
 const SPEAKER_LABEL = /^(?:assistant|ai|model)\s*:\s*/i;
 const QUOTE_PAIRS: Record<string, string> = { '"': '"', "“": "”" };
 
@@ -26,9 +27,11 @@ export function stripPreamble(text: string): string {
 export function stripWrappingQuotes(output: string, input: string): string {
   if (startsWithQuote(input.trim())) return output;
   const trimmed = output.trim();
-  const closing = QUOTE_PAIRS[trimmed[0]];
-  if (closing && trimmed.length >= 2 && trimmed.endsWith(closing)) return trimmed.slice(1, -1);
-  return output;
+  const opening = trimmed[0];
+  const closing = QUOTE_PAIRS[opening];
+  if (!closing || trimmed.length < 2 || !trimmed.endsWith(closing)) return output;
+  const inner = trimmed.slice(1, -1);
+  return inner.includes(opening) || inner.includes(closing) ? output : inner;
 }
 
 export function looksLikeRefusal(output: string): boolean {
@@ -45,14 +48,14 @@ export function stripSpeakerLabel(text: string): string {
 export type FinalizeResult = { ok: true; text: string } | { ok: false; reason: "empty" | "refusal"; text: string };
 
 export function finalizeReplacement(output: string, input: string): FinalizeResult {
-  const text = stripWrappingQuotes(stripPreamble(output), input).trim();
+  const text = stripWrappingQuotes(stripPreamble(output.trimStart()), input).trim();
   if (text === "") return { ok: false, reason: "empty", text: "" };
   if (looksLikeRefusal(text)) return { ok: false, reason: "refusal", text };
   return { ok: true, text: input.endsWith("\n") ? `${text}\n` : text };
 }
 
 export function finalizeWindowText(output: string): string {
-  return stripPreamble(output).trim();
+  return stripPreamble(output.trimStart()).trim();
 }
 
 function normalizeApostrophes(text: string): string {

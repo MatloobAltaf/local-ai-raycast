@@ -34,6 +34,11 @@ describe("stripWrappingQuotes", () => {
   it("keeps quotes when the input was quoted", () => {
     expect(stripWrappingQuotes('"Hello there."', '"hey there"')).toBe('"Hello there."');
   });
+
+  it("keeps quotes that do not wrap the whole text", () => {
+    expect(stripWrappingQuotes('"Yes" or "No"', "yes or no")).toBe('"Yes" or "No"');
+    expect(stripWrappingQuotes("“Yes” or “No”", "yes or no")).toBe("“Yes” or “No”");
+  });
 });
 
 describe("looksLikeRefusal", () => {
@@ -47,6 +52,7 @@ describe("looksLikeRefusal", () => {
     expect(looksLikeRefusal("I'm sorry, but I can't make it tomorrow.")).toBe(false);
     expect(looksLikeRefusal("I'm unable to do Friday.")).toBe(false);
     expect(looksLikeRefusal("Thanks for the update.")).toBe(false);
+    expect(looksLikeRefusal("I'm sorry, but I can't help with the move on Saturday.")).toBe(false);
   });
 });
 
@@ -62,6 +68,26 @@ describe("finalizeReplacement", () => {
       ok: true,
       text: "Hi there.",
     });
+  });
+
+  it("strips a preamble after leading whitespace", () => {
+    expect(finalizeReplacement(" Here is the rewritten text:\nHi there.", "hey there")).toEqual({
+      ok: true,
+      text: "Hi there.",
+    });
+    expect(finalizeReplacement("\nHere is the rewritten text:\nHi there.", "hey there")).toEqual({
+      ok: true,
+      text: "Hi there.",
+    });
+  });
+
+  it("keeps an apologetic rewrite", () => {
+    expect(
+      finalizeReplacement(
+        "I'm sorry, but I can't help with the move on Saturday.",
+        "sorry cant help with the move saturday",
+      ),
+    ).toEqual({ ok: true, text: "I'm sorry, but I can't help with the move on Saturday." });
   });
 
   it("keeps the input trailing newline", () => {
@@ -83,5 +109,6 @@ describe("finalizeReplacement", () => {
 describe("finalizeWindowText", () => {
   it("strips the preamble and trims", () => {
     expect(finalizeWindowText("Here is the summary:\nShort.\n")).toBe("Short.");
+    expect(finalizeWindowText("\n Here is the summary:\nShort.\n")).toBe("Short.");
   });
 });
