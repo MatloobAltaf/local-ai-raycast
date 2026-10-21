@@ -23,6 +23,9 @@ export interface ProbeResult {
   spawnErrorCode?: string;
 }
 
+const KILL_GRACE_MS = 2000;
+const MODEL_FLAG = "--model=";
+
 interface RawRun extends ProbeResult {
   timedOut: boolean;
   aborted: boolean;
@@ -55,14 +58,18 @@ export async function probeFm(args: string[], timeoutMs: number, binaryPath?: st
 }
 
 function modelFromArgs(args: string[]): string | undefined {
-  const index = args.indexOf("--model");
-  return index === -1 ? undefined : args[index + 1];
+  return args.find((arg) => arg.startsWith(MODEL_FLAG))?.slice(MODEL_FLAG.length);
 }
 
 function rawRun(args: string[], options: RunFmOptions): Promise<RawRun> {
   return new Promise((resolve) => {
     const result: RawRun = { exitCode: null, stdout: "", stderr: "", timedOut: false, aborted: false };
+    if (options.signal?.aborted) {
+      resolve({ ...result, aborted: true });
+      return;
+    }
     let settled = false;
+    let killTimer: NodeJS.Timeout | undefined;
 
     const child = spawn(options.binaryPath ?? FM_PATH, args, {
       env: { ...process.env, NO_COLOR: "1" },
@@ -73,12 +80,15 @@ function rawRun(args: string[], options: RunFmOptions): Promise<RawRun> {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(killTimer);
       options.signal?.removeEventListener("abort", onAbort);
       resolve(result);
     };
 
     const terminate = () => {
+      if (killTimer) return;
       child.kill("SIGTERM");
+      killTimer = setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
     };
 
     const onAbort = () => {
@@ -110,8 +120,7 @@ function rawRun(args: string[], options: RunFmOptions): Promise<RawRun> {
       finish();
     });
 
-    if (options.signal?.aborted) onAbort();
-    else options.signal?.addEventListener("abort", onAbort, { once: true });
+    options.signal?.addEventListener("abort", onAbort, { once: true });
 
     child.stdin.end(options.stdin ?? "");
   });
