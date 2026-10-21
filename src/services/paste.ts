@@ -42,9 +42,14 @@ export async function replaceSelection(
     await progress.hide();
     if (!result.ok) return await showHUD(replaceFailureMessage(result));
 
-    if (input.source === "selection" && !isSameTarget(targetApp, await frontmostApp())) {
+    const currentApp = input.source === "selection" ? await frontmostApp() : undefined;
+    if (input.source === "selection" && !isSameTarget(targetApp, currentApp)) {
       await Clipboard.copy(result.text);
-      await showHUD("Focus changed. Result copied to the clipboard.");
+      await showHUD(
+        targetApp && currentApp
+          ? "Focus changed. Result copied to the clipboard."
+          : "Couldn't confirm the target app. Result copied to the clipboard.",
+      );
     } else if (input.source === "selection") {
       await pasteAndRestoreClipboard(result.text);
       await showHUD(`Replaced with ${command.name}`);
