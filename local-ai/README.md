@@ -12,8 +12,10 @@ Local AI is built around commands you define. Write a prompt once, give it a nam
 
 Open **Manage AI Commands** to create, edit, pin, import and export commands. A command is a prompt, an icon, a creativity level and an output mode:
 
-- **Replace**: the result is pasted over your selection, and your clipboard is restored afterwards.
+- **Replace**: the result is pasted over your selection, and your clipboard is restored afterwards. With nothing selected, the result is copied to the clipboard instead.
 - **Window**: the result opens in a window you can copy from.
+
+Use **Run AI Command** to pick and run any command from Raycast.
 
 To give a command its own hotkey:
 
