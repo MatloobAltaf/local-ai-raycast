@@ -89,4 +89,4 @@ npm test
 npm run lint
 ```
 
-Made by [Matloob Altaf](https://matloob.pk).
+Made by Matloob Altaf. Say hi at [matloob.pk](https://matloob.pk).

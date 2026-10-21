@@ -91,7 +91,7 @@ export function SetupStatus(props: {
           actions={
             <ActionPanel>
               <FeedbackAction />
-              <Action.OpenInBrowser title="Visit Author Website" icon={Icon.Globe} url={AUTHOR_URL} />
+              <Action.OpenInBrowser title="Say Hi at Matloob.pk" icon={Icon.Globe} url={AUTHOR_URL} />
               {recheck}
             </ActionPanel>
           }
