@@ -10,7 +10,7 @@ import { RenameChatForm } from "./RenameChatForm";
 
 export function ChatList(props: { seed?: ChatSeed }) {
   const { chats, isLoading, readOnly, notice, mutate } = useChats();
-  const { push } = useNavigation();
+  const { push, pop } = useNavigation();
   const seedHandled = useRef(false);
 
   const sorted = [...chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -22,12 +22,18 @@ export function ChatList(props: { seed?: ChatSeed }) {
   }
 
   function openChat(chat: Chat) {
-    push(<ChatView chat={chat} persist={persist} />);
+    push(<ChatView chat={chat} persist={persist} onNewChat={readOnly ? undefined : replaceWithNewChat} />);
   }
 
-  async function startChat(seed?: ChatSeed) {
+  async function startChat(seed?: ChatSeed, replaceCurrent = false) {
     const chat = createChat({ id: crypto.randomUUID(), now: new Date().toISOString() }, { seed });
-    if (await persist(chat)) openChat(chat);
+    if (!(await persist(chat))) return;
+    if (replaceCurrent) pop();
+    openChat(chat);
+  }
+
+  function replaceWithNewChat() {
+    void startChat(undefined, true);
   }
 
   useEffect(() => {

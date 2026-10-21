@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conversationToText, turnToMarkdown } from "./format";
+import { conversationToMarkdown, conversationToText, turnToMarkdown } from "./format";
 import type { ChatTurn } from "./operations";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -41,5 +41,30 @@ describe("conversationToText", () => {
     expect(conversationToText([turn("q1", "a1"), turn("q2")])).toBe(
       "**You**\n\nq1\n\n**Local AI**\n\na1\n\n---\n\n**You**\n\nq2\n\n**Local AI**\n\n_No answer._",
     );
+  });
+});
+
+describe("conversationToMarkdown", () => {
+  const first = turn("q1", "a1");
+  const second: ChatTurn = { user: { ...turn("q2").user, id: "u2" } };
+
+  it("separates turns oldest first with a horizontal rule", () => {
+    expect(conversationToMarkdown([first, turn("q2", "a2")])).toBe(
+      `${turnToMarkdown(first)}\n\n---\n\n${turnToMarkdown(turn("q2", "a2"))}`,
+    );
+  });
+
+  it("renders the streaming answer live on the matching turn only", () => {
+    const markdown = conversationToMarkdown([first, second], { userId: "u2", text: "partial" });
+    expect(markdown).toContain("a1");
+    expect(markdown.endsWith("**Local AI**\n\npartial")).toBe(true);
+  });
+
+  it("shows the thinking placeholder while the streamed text is still empty", () => {
+    expect(conversationToMarkdown([second], { userId: "u2", text: "" })).toContain("_Thinking..._");
+  });
+
+  it("returns an empty string for no turns", () => {
+    expect(conversationToMarkdown([])).toBe("");
   });
 });

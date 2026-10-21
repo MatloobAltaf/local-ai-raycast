@@ -1,8 +1,8 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon, showToast, Toast, useNavigation } from "@raycast/api";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { conversationToText, turnToMarkdown } from "../lib/chats/format";
+import { conversationToMarkdown, conversationToText, type StreamingAnswer } from "../lib/chats/format";
 import { appendMessage, toTurns } from "../lib/chats/operations";
 import { buildChatInstructions, buildChatStdin, replayContent } from "../lib/chats/transcript";
 import type { Chat, ChatMessage } from "../lib/chats/types";
@@ -21,22 +21,17 @@ import {
 import { getSettings } from "../services/settings";
 import { showFmErrorToast } from "../services/errors";
 import { AttachImageForm } from "./AttachImageForm";
+import { ChatComposer } from "./ChatComposer";
 import { ChatSettingsForm } from "./ChatSettingsForm";
 
-interface StreamingTurn {
-  userId: string;
-  text: string;
-}
-
-export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<boolean> }) {
-  const { push } = useNavigation();
+export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<boolean>; onNewChat?: () => void }) {
+  const { push, pop } = useNavigation();
   const [chat, setChat] = useState(props.chat);
   const [composer, setComposer] = useState("");
-  const [streaming, setStreaming] = useState<StreamingTurn>();
+  const [streaming, setStreaming] = useState<StreamingAnswer>();
   const [pendingImage, setPendingImage] = useState<string>();
   const [framingTokens, setFramingTokens] = useState(0);
   const [isSending, setIsSending] = useState(false);
-  const [selectedId, setSelectedId] = useState<string>();
   const sendingRef = useRef(false);
   const chatRef = useRef(chat);
   const controllerRef = useRef<AbortController | undefined>(undefined);
@@ -144,7 +139,6 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         return;
       }
       submitted = true;
-      setSelectedId(userMessage.id);
       setStreaming({ userId: userMessage.id, text: "" });
 
       const output = await respond(stdin, {
@@ -200,7 +194,8 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
 
   const isStreaming = streaming !== undefined;
   const isBusy = isStreaming || isSending;
-  const canSend = composer.trim().length > 0 && !isBusy;
+  const lastAnswer = [...turns].reverse().find((turn) => turn.assistant)?.assistant?.content;
+  const imageName = pendingImage ? path.basename(pendingImage) : undefined;
 
   const sharedActions = (
     <>
@@ -211,7 +206,6 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
         shortcut={{ modifiers: ["cmd"], key: "i" }}
         onAction={() => push(<AttachImageForm onAttach={setPendingImage} />)}
       />
-      {turns.length > 0 && <Action.CopyToClipboard title="Copy Conversation" content={conversationToText(turns)} />}
       {pendingImage && (
         <Action title="Remove Attached Image" icon={Icon.XMarkCircle} onAction={() => setPendingImage(undefined)} />
       )}
@@ -223,58 +217,64 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
     </>
   );
 
+  if (turns.length === 0 && !isBusy) {
+    return (
+      <ChatComposer
+        initialText={composer}
+        description={
+          chat.instructions ? `Answers run on-device. Instructions: ${chat.instructions}` : "Answers run on-device."
+        }
+        imageName={imageName}
+        extraActions={sharedActions}
+        onSubmit={(text) => void send(text)}
+      />
+    );
+  }
+
   return (
-    <List
+    <Detail
       navigationTitle={`${chat.title} · Context ${percent}%`}
-      isShowingDetail={turns.length > 0}
-      filtering={false}
-      searchBarPlaceholder={
-        pendingImage ? `Ask a question... (image: ${path.basename(pendingImage)})` : "Ask a question..."
-      }
-      selectedItemId={selectedId}
-      onSelectionChange={(id) => setSelectedId(id ?? undefined)}
-      searchText={composer}
-      onSearchTextChange={setComposer}
+      markdown={conversationToMarkdown(turns, streaming)}
       isLoading={isBusy}
-    >
-      {turns.length === 0 && (
-        <List.EmptyView
-          title="Start a conversation"
-          description={
-            chat.instructions
-              ? `Answers run on-device. Instructions: ${chat.instructions}`
-              : "Type a question below. Answers run on-device."
-          }
-          actions={
-            <ActionPanel>
-              {canSend && <Action title="Send Message" icon={Icon.Message} onAction={() => send(composer)} />}
-              {sharedActions}
-            </ActionPanel>
-          }
-        />
-      )}
-      {[...turns].reverse().map((turn) => {
-        const isPending = streaming?.userId === turn.user.id;
-        return (
-          <List.Item
-            key={turn.user.id}
-            id={turn.user.id}
-            title={turn.user.content.replace(/\s+/g, " ").trim()}
-            icon={isPending ? Icon.CircleProgress : Icon.Person}
-            accessories={turn.user.imagePath ? [{ icon: Icon.Image, tooltip: "Image attached" }] : []}
-            detail={
-              <List.Item.Detail markdown={turnToMarkdown(turn, isPending ? streaming.text : undefined, isPending)} />
-            }
-            actions={
-              <ActionPanel>
-                {canSend && <Action title="Send Message" icon={Icon.Message} onAction={() => send(composer)} />}
-                {turn.assistant && <Action.CopyToClipboard title="Copy Answer" content={turn.assistant.content} />}
-                {sharedActions}
-              </ActionPanel>
-            }
-          />
-        );
-      })}
-    </List>
+      actions={
+        <ActionPanel>
+          {!isBusy && (
+            <Action
+              title="Reply"
+              icon={Icon.Message}
+              onAction={() =>
+                push(
+                  <ChatComposer
+                    initialText={composer}
+                    imageName={imageName}
+                    onSubmit={(text) => {
+                      pop();
+                      void send(text);
+                    }}
+                  />,
+                )
+              }
+            />
+          )}
+          {props.onNewChat && !isBusy && (
+            <Action
+              title="New Chat"
+              icon={Icon.Plus}
+              shortcut={{ modifiers: ["cmd"], key: "n" }}
+              onAction={props.onNewChat}
+            />
+          )}
+          {sharedActions}
+          {lastAnswer && (
+            <Action.CopyToClipboard
+              title="Copy Last Answer"
+              content={lastAnswer}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            />
+          )}
+          {turns.length > 0 && <Action.CopyToClipboard title="Copy Conversation" content={conversationToText(turns)} />}
+        </ActionPanel>
+      }
+    />
   );
 }
