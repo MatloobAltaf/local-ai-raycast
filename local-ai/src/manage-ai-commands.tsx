@@ -1,5 +1,10 @@
-import { Detail } from "@raycast/api";
+import { CommandList } from "./components/CommandList";
+import { PreflightGate } from "./components/PreflightGate";
 
 export default function Command() {
-  return <Detail markdown="Coming soon" />;
+  return (
+    <PreflightGate>
+      <CommandList mode="manage" />
+    </PreflightGate>
+  );
 }
