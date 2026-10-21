@@ -24,6 +24,17 @@ describe("buildChatStdin", () => {
     expect(buildChatStdin(history, "Q2")).toBe("Conversation so far:\nUser: Q1\n\nNew message from User:\nQ2");
   });
 
+  it("replays an interrupted answer without its reason or explanation", () => {
+    const interrupted = {
+      ...message("assistant", "Par"),
+      interruptedReason: "Timed out",
+      interruptedExplanation: "Too slow.",
+    };
+    expect(buildChatStdin([{ user: message("user", "Q1"), assistant: interrupted }], "Q2")).toBe(
+      "Conversation so far:\nUser: Q1\nAssistant: Par\n\nNew message from User:\nQ2",
+    );
+  });
+
   it("marks a past message that had an image without resending it", () => {
     const history: ChatTurn[] = [
       { user: { ...message("user", "Q1"), imagePath: "/tmp/a.png" }, assistant: message("assistant", "A1") },

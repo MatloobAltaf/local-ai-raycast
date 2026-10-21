@@ -26,7 +26,7 @@ export function turnToMarkdown(
   const block = failure
     ? `\n\n${errorBlockMarkdown(failure.title, failure.explanation)}`
     : reason
-      ? `\n\n${errorBlockMarkdown(reason)}`
+      ? `\n\n${errorBlockMarkdown(reason, turn.assistant?.interruptedExplanation)}`
       : "";
   return `**You**\n\n${quote}${image}\n\n**Local AI**\n\n${answer || (isPending ? PENDING_ANSWER : EMPTY_ANSWER)}${block}`;
 }

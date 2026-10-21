@@ -50,4 +50,26 @@ describe("migrateChatStore", () => {
     expect(result).toMatchObject({ kind: "ok", changed: false });
     if (result.kind === "ok") expect(result.store.chats[0].messages[1].interruptedReason).toBe("Stopped");
   });
+
+  it("keeps the interrupted explanation and loads older stores without it unchanged", () => {
+    const withExplanation = {
+      id: "m2",
+      role: "assistant",
+      content: "Par",
+      interruptedReason: "Timed out",
+      interruptedExplanation: "Too slow.",
+      createdAt: message.createdAt,
+    };
+    const result = migrateChatStore(
+      JSON.stringify({ version: 1, chats: [{ ...chat, messages: [message, withExplanation] }] }),
+    );
+    expect(result).toMatchObject({ kind: "ok", changed: false });
+    if (result.kind === "ok") expect(result.store.chats[0].messages[1].interruptedExplanation).toBe("Too slow.");
+
+    const older: Record<string, unknown> = { ...withExplanation };
+    delete older.interruptedExplanation;
+    expect(
+      migrateChatStore(JSON.stringify({ version: 1, chats: [{ ...chat, messages: [message, older] }] })),
+    ).toMatchObject({ kind: "ok", changed: false });
+  });
 });

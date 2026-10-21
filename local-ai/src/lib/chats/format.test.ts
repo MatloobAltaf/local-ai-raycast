@@ -43,6 +43,15 @@ describe("interrupted answers", () => {
     expect(turnToMarkdown(interrupted)).toBe("**You**\n\n> q\n\n**Local AI**\n\npartial\n\n> **Stopped: Timed out**");
   });
 
+  it("renders the stored explanation under the reason", () => {
+    const interrupted = turn("q", "partial");
+    interrupted.assistant!.interruptedReason = "Timed out";
+    interrupted.assistant!.interruptedExplanation = "Too slow.";
+    expect(turnToMarkdown(interrupted)).toBe(
+      "**You**\n\n> q\n\n**Local AI**\n\npartial\n\n> **Stopped: Timed out**\n> Too slow.",
+    );
+  });
+
   it("shows a live failure with its explanation under a question that got no answer", () => {
     const markdown = conversationToMarkdown([turn("q")], undefined, {
       userId: "u",

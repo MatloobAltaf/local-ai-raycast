@@ -204,6 +204,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
                 role: "assistant",
                 content: keptText,
                 interruptedReason: title,
+                interruptedExplanation: explanation,
                 createdAt: interruptedAt,
               },
               interruptedAt,
