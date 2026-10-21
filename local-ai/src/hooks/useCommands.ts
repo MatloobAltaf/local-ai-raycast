@@ -16,7 +16,15 @@ export function useCommands() {
       await showToast({ style: Toast.Style.Failure, title: "Commands are read-only", message: latest.notice });
       return;
     }
-    await saveCommands(change(latest.commands));
+    try {
+      await saveCommands(change(latest.commands));
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Could not save commands",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     revalidate();
   }
 
