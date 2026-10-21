@@ -85,16 +85,6 @@ export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: 
       )}
       <List.Section title="Pinned">{pinned.map(renderItem)}</List.Section>
       <List.Section title={pinned.length > 0 ? "Commands" : undefined}>{others.map(renderItem)}</List.Section>
-      {managing && !readOnly && (
-        <List.EmptyView
-          title="No Commands"
-          actions={
-            <ActionPanel>
-              <Action.Push title="Create Command" icon={Icon.Plus} target={<CommandForm />} />
-            </ActionPanel>
-          }
-        />
-      )}
     </List>
   );
 }
