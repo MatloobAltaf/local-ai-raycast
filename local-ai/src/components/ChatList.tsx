@@ -58,13 +58,6 @@ export function ChatList(props: { seed?: ChatSeed }) {
         />
       )}
       {notice && <List.Item icon={Icon.Info} title={notice} actions={<ActionPanel>{newChatAction}</ActionPanel>} />}
-      {sorted.length === 0 && !notice && (
-        <List.EmptyView
-          title="No chats yet"
-          description="Start a conversation with the on-device model."
-          actions={<ActionPanel>{newChatAction}</ActionPanel>}
-        />
-      )}
       {sorted.map((chat) => (
         <List.Item
           key={chat.id}
