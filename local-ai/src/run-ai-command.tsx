@@ -4,7 +4,7 @@ import {
   Detail,
   Icon,
   List,
-  PopToRootType,
+  popToRoot,
   showToast,
   Toast,
   useNavigation,
@@ -100,6 +100,8 @@ function DirectRun(props: { context: RunViewLaunchContext; input?: RunInput }) {
 }
 
 async function replaceInPreviousApp(command: AiCommand, input: RunInput, argumentValues: Record<string, string>) {
-  await closeMainWindow({ popToRootType: PopToRootType.Immediate });
+  // Popping to root immediately unloads this command and kills the run, so pop only after the paste.
+  await closeMainWindow();
   await replaceSelection(command, input, argumentValues);
+  await popToRoot({ clearSearchBar: true });
 }
