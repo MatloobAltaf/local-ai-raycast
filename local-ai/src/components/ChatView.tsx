@@ -27,13 +27,15 @@ interface StreamingTurn {
   text: string;
 }
 
-export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<void> }) {
+export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<boolean> }) {
   const { push } = useNavigation();
   const [chat, setChat] = useState(props.chat);
   const [composer, setComposer] = useState("");
   const [streaming, setStreaming] = useState<StreamingTurn>();
   const [pendingImage, setPendingImage] = useState<string>();
   const [framingTokens, setFramingTokens] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+  const sendingRef = useRef(false);
   const chatRef = useRef(chat);
   const controllerRef = useRef<AbortController | undefined>(undefined);
 
@@ -49,35 +51,52 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
     return contextPercent(framingTokens + selectHistory(stored, available).usedTokens);
   }, [turns, framingTokens]);
 
-  async function commit(next: Chat): Promise<void> {
+  function adopt(next: Chat) {
     chatRef.current = next;
     setChat(next);
-    await props.persist(next);
+  }
+
+  async function commit(next: Chat): Promise<boolean> {
+    adopt(next);
+    return props.persist(next);
   }
 
   async function send(text: string): Promise<void> {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    setIsSending(true);
     const content = text.trim();
     const imagePath = pendingImage;
+    setComposer("");
+    let submitted = false;
     if (imagePath && !existsSync(imagePath)) {
       setPendingImage(undefined);
+      setComposer((current) => current || text);
       await showToast({ style: Toast.Style.Failure, title: "Image not found" });
+      sendingRef.current = false;
+      setIsSending(false);
       return;
     }
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     const { signal } = controller;
     const { timeoutMs, defaultModel, defaultCreativity } = getSettings();
     const instructions = buildChatInstructions(chatRef.current.instructions);
-    const countMessage = async (value: string, framing: number, imagePaths?: string[]) =>
-      inputTokensFrom(await countTokens(value, { instructions, imagePaths, timeoutMs, signal }), framing);
+    const rawCount = (value: string, imagePaths?: string[]) =>
+      countTokens(value, { instructions, imagePaths, timeoutMs, signal });
+    const countMessage = async (value: string, framing: number) => inputTokensFrom(await rawCount(value), framing);
 
     try {
-      const framing = await countTokens("", { instructions, timeoutMs, signal });
       const imagePaths = imagePath ? [imagePath] : undefined;
-      const messageTokens = await countMessage(content, framing, imagePaths).catch((error: unknown) => {
-        if (!imagePaths || signal.aborted) throw error;
-        return countMessage(content, framing);
-      });
+      const [framing, rawMessageCount] = await Promise.all([
+        rawCount(""),
+        rawCount(content, imagePaths).catch((error: unknown) => {
+          if (!imagePaths || signal.aborted) throw error;
+          return rawCount(content);
+        }),
+      ]);
+      const messageTokens = inputTokensFrom(rawMessageCount, framing);
       const limit = questionInputLimit(framing);
       if (messageTokens > limit) {
         await showToast({ style: Toast.Style.Failure, title: tooLongMessage(messageTokens, limit) });
@@ -86,7 +105,6 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
       const storedTokens = imagePath
         ? await countMessage(replayContent({ content, imagePath }), framing)
         : messageTokens;
-      setComposer("");
       setPendingImage(undefined);
       setFramingTokens(framing);
 
@@ -118,7 +136,12 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
         ...(imagePath ? { imagePath } : {}),
         createdAt: now,
       };
-      await commit(appendMessage({ ...chatRef.current, messages: counted }, userMessage, now));
+      const previous = chatRef.current;
+      if (!(await commit(appendMessage({ ...previous, messages: counted }, userMessage, now)))) {
+        adopt(previous);
+        return;
+      }
+      submitted = true;
       setStreaming({ userId: userMessage.id, text: "" });
 
       const output = await respond(stdin, {
@@ -158,20 +181,27 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
     } catch (error) {
       if (!signal.aborted) await showFmErrorToast(error);
     } finally {
+      if (!submitted) setComposer((current) => current || text);
       setStreaming(undefined);
+      sendingRef.current = false;
+      setIsSending(false);
     }
   }
 
-  async function saveInstructions(instructions: string): Promise<void> {
-    await commit({ ...chatRef.current, instructions, updatedAt: new Date().toISOString() });
+  async function saveInstructions(instructions: string): Promise<boolean> {
+    const previous = chatRef.current;
+    const saved = await commit({ ...previous, instructions, updatedAt: new Date().toISOString() });
+    if (!saved) adopt(previous);
+    return saved;
   }
 
   const isStreaming = streaming !== undefined;
-  const canSend = composer.trim().length > 0 && !isStreaming;
+  const isBusy = isStreaming || isSending;
+  const canSend = composer.trim().length > 0 && !isBusy;
 
   const sharedActions = (
     <>
-      {isStreaming && <Action title="Stop" icon={Icon.Stop} onAction={() => controllerRef.current?.abort()} />}
+      {isBusy && <Action title="Stop" icon={Icon.Stop} onAction={() => controllerRef.current?.abort()} />}
       <Action
         title="Attach Image"
         icon={Icon.Image}
@@ -197,7 +227,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
       searchBarPlaceholder={pendingImage ? `Type a message (image: ${path.basename(pendingImage)})` : "Type a message"}
       searchText={composer}
       onSearchTextChange={setComposer}
-      isLoading={isStreaming}
+      isLoading={isBusy}
     >
       {turns.length === 0 && (
         <List.EmptyView

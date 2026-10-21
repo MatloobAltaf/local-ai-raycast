@@ -1,11 +1,10 @@
 import { Action, ActionPanel, Form, useNavigation } from "@raycast/api";
 
-export function RenameChatForm(props: { title: string; onSave: (title: string) => Promise<void> }) {
+export function RenameChatForm(props: { title: string; onSave: (title: string) => Promise<boolean> }) {
   const { pop } = useNavigation();
 
   async function submit(values: { title: string }) {
-    await props.onSave(values.title);
-    pop();
+    if (await props.onSave(values.title)) pop();
   }
 
   return (

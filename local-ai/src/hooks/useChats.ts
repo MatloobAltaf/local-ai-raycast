@@ -12,9 +12,19 @@ export function useChats() {
       await showToast({ style: Toast.Style.Failure, title: "Chats are read-only", message: latest.notice });
       return false;
     }
-    await saveChats(change(latest.chats));
-    revalidate();
-    return true;
+    try {
+      await saveChats(change(latest.chats));
+      return true;
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Could not save chats",
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    } finally {
+      revalidate();
+    }
   }
 
   return {

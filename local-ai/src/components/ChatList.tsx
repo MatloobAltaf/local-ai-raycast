@@ -22,7 +22,7 @@ export function ChatList(props: { seed?: ChatSeed }) {
   }
 
   function openChat(chat: Chat) {
-    push(<ChatView chat={chat} persist={async (next) => void (await persist(next))} />);
+    push(<ChatView chat={chat} persist={persist} />);
   }
 
   async function startChat(seed?: ChatSeed) {
@@ -74,11 +74,11 @@ export function ChatList(props: { seed?: ChatSeed }) {
                   target={
                     <RenameChatForm
                       title={chat.title}
-                      onSave={async (title) => {
-                        await mutate((current) =>
+                      onSave={(title) =>
+                        mutate((current) =>
                           current.map((c) => (c.id === chat.id ? renameChat(c, title, new Date().toISOString()) : c)),
-                        );
-                      }}
+                        )
+                      }
                     />
                   }
                 />
@@ -90,13 +90,13 @@ export function ChatList(props: { seed?: ChatSeed }) {
                   target={
                     <ChatSettingsForm
                       instructions={chat.instructions}
-                      onSave={async (instructions) => {
-                        await mutate((current) =>
+                      onSave={(instructions) =>
+                        mutate((current) =>
                           current.map((c) =>
                             c.id === chat.id ? { ...c, instructions, updatedAt: new Date().toISOString() } : c,
                           ),
-                        );
-                      }}
+                        )
+                      }
                     />
                   }
                 />

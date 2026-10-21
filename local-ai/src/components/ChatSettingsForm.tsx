@@ -1,12 +1,11 @@
 import { Action, ActionPanel, Form, useNavigation } from "@raycast/api";
 import { DEFAULT_CHAT_INSTRUCTIONS } from "../lib/chats/transcript";
 
-export function ChatSettingsForm(props: { instructions: string; onSave: (instructions: string) => Promise<void> }) {
+export function ChatSettingsForm(props: { instructions: string; onSave: (instructions: string) => Promise<boolean> }) {
   const { pop } = useNavigation();
 
   async function submit(values: { instructions: string }) {
-    await props.onSave(values.instructions.trim());
-    pop();
+    if (await props.onSave(values.instructions.trim())) pop();
   }
 
   return (
