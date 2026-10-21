@@ -45,13 +45,17 @@ export function AnswerView(props: { question: string; selection?: string; onAskW
   return (
     <Detail
       isLoading={isLoading}
-      markdown={answer}
+      markdown={answer || (isLoading ? "" : "_No answer._")}
       actions={
-        !isLoading && answer ? (
+        !isLoading ? (
           <ActionPanel>
-            <Action.CopyToClipboard content={answer} />
-            <Action.Paste content={answer} />
-            <ContinueInChatAction userMessage={question} assistantMessage={answer} />
+            {answer && (
+              <>
+                <Action.CopyToClipboard content={answer} />
+                <Action.Paste content={answer} />
+                <ContinueInChatAction userMessage={question} assistantMessage={answer} />
+              </>
+            )}
             <Action title="Retry" icon={Icon.ArrowClockwise} onAction={retry} />
             {selection && onAskWithoutSelection && (
               <Action title="Ask Without Selection" icon={Icon.TextCursor} onAction={onAskWithoutSelection} />
