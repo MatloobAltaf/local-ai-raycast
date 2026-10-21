@@ -46,6 +46,10 @@ export function isRestorable(snapshot: ClipboardSnapshot): boolean {
   return clipboardRestoreContent(snapshot) !== undefined;
 }
 
+export function isClipboardInfoEmpty(output: string): boolean {
+  return output.trim() === "";
+}
+
 function toFilePath(file: string): string {
   return file.startsWith("file://") ? fileURLToPath(file) : file;
 }

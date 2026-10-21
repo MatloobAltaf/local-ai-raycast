@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { clipboardRestoreContent, isRestorable, isRunInFlight, isSameTarget, replaceFailureMessage } from "./replace";
+import {
+  clipboardRestoreContent,
+  isClipboardInfoEmpty,
+  isRestorable,
+  isRunInFlight,
+  isSameTarget,
+  replaceFailureMessage,
+} from "./replace";
 
 describe("isRunInFlight", () => {
   const now = 1_000_000;
@@ -108,5 +115,16 @@ describe("isRestorable", () => {
   it("is false when nothing can be restored, such as an image-only clipboard", () => {
     expect(isRestorable({ text: "" })).toBe(false);
     expect(isRestorable({ text: "", html: "", file: "" })).toBe(false);
+  });
+});
+
+describe("isClipboardInfoEmpty", () => {
+  it("is true for blank output from an empty pasteboard", () => {
+    expect(isClipboardInfoEmpty("")).toBe(true);
+    expect(isClipboardInfoEmpty("\n")).toBe(true);
+  });
+
+  it("is false when the pasteboard lists any type", () => {
+    expect(isClipboardInfoEmpty("\u00abclass PNGf\u00bb, 1234\n")).toBe(false);
   });
 });
