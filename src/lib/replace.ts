@@ -7,6 +7,11 @@ export interface ClipboardSnapshot {
   html?: string;
 }
 
+export interface AppIdentity {
+  bundleId?: string;
+  path: string;
+}
+
 export type ClipboardRestoreContent = { file: string } | { html: string; text: string } | { text: string };
 
 const REFUSAL_EXCERPT_LENGTH = 80;
@@ -17,6 +22,12 @@ export function isRunInFlight(startedAt: string | undefined, now: number, timeou
   if (!Number.isFinite(started)) return false;
   const age = now - started;
   return age >= 0 && age < timeoutMs;
+}
+
+export function isSameTarget(before: AppIdentity | undefined, after: AppIdentity | undefined): boolean {
+  if (!before || !after) return false;
+  if (before.bundleId && after.bundleId) return before.bundleId === after.bundleId;
+  return before.path === after.path;
 }
 
 export function replaceFailureMessage(result: Extract<FinalizeResult, { ok: false }>): string {
