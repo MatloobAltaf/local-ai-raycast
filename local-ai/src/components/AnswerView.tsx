@@ -1,5 +1,6 @@
 import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { useFmStream } from "../hooks/useFmStream";
+import { EMPTY_ANSWER, PENDING_ANSWER } from "../lib/chats/format";
 import { FmError } from "../lib/fm/errors";
 import { respond } from "../lib/fm/client";
 import { measureBudget } from "../lib/measure-budget";
@@ -42,10 +43,15 @@ export function AnswerView(props: { question: string; selection?: string; onAskW
   if (error) return <FmErrorView error={error} onRetry={retry} />;
 
   const answer = isLoading ? text : finalizeWindowText(text);
+  const quote = question
+    .split("\n")
+    .map((line) => `> ${line}`)
+    .join("\n");
+  const answerMarkdown = answer || (isLoading ? PENDING_ANSWER : EMPTY_ANSWER);
   return (
     <Detail
       isLoading={isLoading}
-      markdown={answer || (isLoading ? "" : "_No answer._")}
+      markdown={`**You**\n\n${quote}\n\n**Local AI**\n\n${answerMarkdown}`}
       actions={
         !isLoading ? (
           <ActionPanel>
