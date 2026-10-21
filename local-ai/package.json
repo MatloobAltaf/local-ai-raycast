@@ -27,8 +27,8 @@
     },
     {
       "name": "run-command",
-      "title": "Run Saved AI Command",
-      "description": "Runs an AI command from its Quicklink. Create Quicklinks in Manage AI Commands",
+      "title": "Run AI Command from Hotkey",
+      "description": "Runs an AI command from its Quicklink hotkey without opening Raycast. Create a Quicklink in Manage AI Commands, then assign it a hotkey",
       "mode": "no-view"
     },
     {
