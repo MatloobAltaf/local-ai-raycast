@@ -22,6 +22,10 @@ export function questionInputLimit(instructionTokens: number): number {
   return Math.max(0, free);
 }
 
+export function inputTokensFrom(combined: number, framing: number): number {
+  return Math.max(0, combined - framing);
+}
+
 export function checkBudget(inputTokens: number, limit: number): BudgetCheck {
   if (inputTokens <= limit) return { ok: true, tokens: inputTokens, limit };
   return { ok: false, tokens: inputTokens, limit, message: tooLongMessage(inputTokens, limit) };

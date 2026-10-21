@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { checkBudget, commandInputLimit, contextPercent, questionInputLimit, selectHistory } from "./tokens";
+import {
+  checkBudget,
+  commandInputLimit,
+  contextPercent,
+  inputTokensFrom,
+  questionInputLimit,
+  selectHistory,
+} from "./tokens";
 
 describe("input limits", () => {
   it("splits the free window between input and output for commands", () => {
@@ -47,5 +54,15 @@ describe("contextPercent", () => {
   it("rounds and caps at 100", () => {
     expect(contextPercent(2048)).toBe(50);
     expect(contextPercent(9999)).toBe(100);
+  });
+});
+
+describe("inputTokensFrom", () => {
+  it("subtracts framing from the combined count", () => {
+    expect(inputTokensFrom(120, 50)).toBe(70);
+  });
+
+  it("never goes below zero", () => {
+    expect(inputTokensFrom(40, 50)).toBe(0);
   });
 });
