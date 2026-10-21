@@ -39,8 +39,8 @@ export function ResultView(props: { command: AiCommand; input: RunInput; argumen
       actions={
         !isLoading ? (
           <ActionPanel>
-            {result && <Action.Paste title="Paste to Active App" content={result} />}
             {result && <Action.CopyToClipboard content={result} />}
+            {result && <Action.Paste title="Paste to Active App" content={result} />}
             {result && !error && <ContinueInChatAction userMessage={input.text} assistantMessage={result} />}
             <Action title="Retry" icon={Icon.ArrowClockwise} onAction={retry} />
             <Action.Push title="Edit Command" icon={Icon.Pencil} target={<CommandForm command={command} />} />
