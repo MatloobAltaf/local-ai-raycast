@@ -46,12 +46,7 @@ export default function Command(props: LaunchProps) {
 }
 
 function RunList(props: { input?: RunInput }) {
-  return (
-    <CommandList
-      mode="run"
-      renderRunActions={(command) => <RunCommandAction command={command} input={props.input} />}
-    />
-  );
+  return <CommandList renderRunAction={(command) => <RunCommandAction command={command} input={props.input} />} />;
 }
 
 function RunCommandAction(props: { command: AiCommand; input?: RunInput }) {

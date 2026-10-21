@@ -10,16 +10,14 @@ Local AI is built around commands you define. Write a prompt once, give it a nam
 
 ## Custom commands and hotkeys
 
-Open **Manage AI Commands** to create, edit, pin, import and export commands. A command is a prompt, an icon, a creativity level and an output mode:
+Open **AI Commands** to run, create, edit, pin, import and export commands. A command is a prompt, an icon, a creativity level and an output mode:
 
-- **Replace**: from a hotkey, the result is pasted over your selection, and your clipboard is restored afterwards. With nothing selected, the result is copied to the clipboard instead. From **Run AI Command**, the result opens in a window first, and **Paste to Active App** puts it over your selection.
+- **Replace**: from a hotkey, the result is pasted over your selection, and your clipboard is restored afterwards. With nothing selected, the result is copied to the clipboard instead. From **AI Commands**, the result opens in a window first, and **Paste to Active App** puts it over your selection.
 - **Window**: the result opens in a window you can copy from.
-
-Use **Run AI Command** to pick and run any command from Raycast.
 
 To give a command its own hotkey:
 
-1. In **Manage AI Commands**, choose **Create Quicklink** on the command.
+1. In **AI Commands**, choose **Create Quicklink** on the command.
 2. Open Raycast Settings, Extensions, Quicklinks, and assign a hotkey to the new Quicklink.
 
 The first time a hotkey launches a command, Raycast asks you to confirm. Choose **Always Open** and it won't ask again.

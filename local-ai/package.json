@@ -15,20 +15,14 @@
   "commands": [
     {
       "name": "run-ai-command",
-      "title": "Run AI Command",
-      "description": "Run one of your AI commands on the selected text",
-      "mode": "view"
-    },
-    {
-      "name": "manage-ai-commands",
-      "title": "Manage AI Commands",
-      "description": "Create, edit, import and export your AI commands",
+      "title": "AI Commands",
+      "description": "Run, create and manage your AI commands",
       "mode": "view"
     },
     {
       "name": "run-command",
       "title": "Run AI Command from Hotkey",
-      "description": "Runs an AI command from its Quicklink hotkey without opening Raycast. Create a Quicklink in Manage AI Commands, then assign it a hotkey",
+      "description": "Runs an AI command from its Quicklink hotkey without opening Raycast. Create a Quicklink in AI Commands, then assign it a hotkey",
       "mode": "no-view"
     },
     {

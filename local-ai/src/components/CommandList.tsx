@@ -39,12 +39,11 @@ export { commandIcon } from "./command-icon";
 const OUTPUT_LABELS = { replace: "Replace Selection", window: "Show in Window" } as const;
 const QUICKLINK_HINT = "Assign a hotkey to this Quicklink in Raycast Settings, Extensions, Quicklinks";
 
-export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: (command: AiCommand) => ReactNode }) {
+export function CommandList(props: { renderRunAction: (command: AiCommand) => ReactNode }) {
   const { commands, isLoading, readOnly, notice, mutate } = useCommands();
   const sorted = sortCommands(commands);
   const pinned = sorted.filter((command) => command.pinned);
   const others = sorted.filter((command) => !command.pinned);
-  const managing = props.mode === "manage";
 
   useEffect(() => {
     if (notice) void showToast({ style: Toast.Style.Failure, title: "Commands", message: notice });
@@ -56,14 +55,16 @@ export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: 
         key={command.id}
         title={command.name}
         icon={commandIcon(command)}
-        detail={<List.Item.Detail markdown={detailMarkdown(command, managing)} />}
+        detail={<List.Item.Detail markdown={detailMarkdown(command)} />}
         actions={
           <ActionPanel>
-            {managing ? (
-              <ManageActions command={command} commands={commands} readOnly={readOnly} mutate={mutate} />
-            ) : (
-              props.renderRunActions?.(command)
-            )}
+            <CommandActions
+              command={command}
+              commands={commands}
+              readOnly={readOnly}
+              mutate={mutate}
+              runAction={props.renderRunAction(command)}
+            />
           </ActionPanel>
         }
       />
@@ -72,14 +73,17 @@ export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: 
 
   return (
     <List isLoading={isLoading} isShowingDetail searchBarPlaceholder="Search commands">
-      {managing && !readOnly && (
+      {!readOnly && (
         <List.Item
           id="create-new-command"
           title="Create New Command"
           icon={Icon.Plus}
           actions={
             <ActionPanel>
-              <Action.Push title="Create New Command" icon={Icon.Plus} target={<CommandForm />} />
+              <ActionPanel.Section>
+                <Action.Push title="Create New Command" icon={Icon.Plus} target={<CommandForm />} />
+              </ActionPanel.Section>
+              <TransferActions commands={commands} readOnly={readOnly} />
             </ActionPanel>
           }
         />
@@ -90,16 +94,18 @@ export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: 
   );
 }
 
-function ManageActions(props: {
+function CommandActions(props: {
   command: AiCommand;
   commands: AiCommand[];
   readOnly: boolean;
   mutate: (change: (current: AiCommand[]) => AiCommand[]) => Promise<boolean>;
+  runAction: ReactNode;
 }) {
-  const { command, commands, readOnly, mutate } = props;
+  const { command, commands, readOnly, mutate, runAction } = props;
 
   return (
     <>
+      <ActionPanel.Section>{runAction}</ActionPanel.Section>
       {!readOnly && (
         <ActionPanel.Section>
           <Action.Push
@@ -142,18 +148,7 @@ function ManageActions(props: {
       <ActionPanel.Section>
         <CreateQuicklinkAction command={command} />
       </ActionPanel.Section>
-      <ActionPanel.Section>
-        {!readOnly && <Action.Push title="Import Commands" icon={Icon.Download} target={<ImportCommandsForm />} />}
-        <Action title="Export Commands" icon={Icon.Upload} onAction={() => exportCommands(commands)} />
-        <Action
-          title="Copy Export JSON"
-          icon={Icon.Clipboard}
-          onAction={async () => {
-            await Clipboard.copy(serializeExport(commands));
-            await showToast({ style: Toast.Style.Success, title: "Copied export JSON" });
-          }}
-        />
-      </ActionPanel.Section>
+      <TransferActions commands={commands} readOnly={readOnly} />
       {!readOnly && (
         <ActionPanel.Section>
           <Action
@@ -198,6 +193,25 @@ function ManageActions(props: {
   );
 }
 
+function TransferActions(props: { commands: AiCommand[]; readOnly: boolean }) {
+  const { commands, readOnly } = props;
+
+  return (
+    <ActionPanel.Section>
+      {!readOnly && <Action.Push title="Import Commands" icon={Icon.Download} target={<ImportCommandsForm />} />}
+      <Action title="Export Commands" icon={Icon.Upload} onAction={() => exportCommands(commands)} />
+      <Action
+        title="Copy Export JSON"
+        icon={Icon.Clipboard}
+        onAction={async () => {
+          await Clipboard.copy(serializeExport(commands));
+          await showToast({ style: Toast.Style.Success, title: "Copied export JSON" });
+        }}
+      />
+    </ActionPanel.Section>
+  );
+}
+
 async function exportCommands(commands: AiCommand[]) {
   const date = new Date();
   const stamp = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
@@ -212,8 +226,14 @@ async function exportCommands(commands: AiCommand[]) {
   }
 }
 
-function detailMarkdown(command: AiCommand, managing: boolean): string {
-  const lines = [`**Output:** ${OUTPUT_LABELS[command.output]}`, "", "````", command.prompt, "````"];
-  if (managing) lines.push("", `_Quicklink: ${QUICKLINK_HINT}_`);
-  return lines.join("\n");
+function detailMarkdown(command: AiCommand): string {
+  return [
+    `**Output:** ${OUTPUT_LABELS[command.output]}`,
+    "",
+    "````",
+    command.prompt,
+    "````",
+    "",
+    `_Quicklink: ${QUICKLINK_HINT}_`,
+  ].join("\n");
 }

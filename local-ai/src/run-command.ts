@@ -12,7 +12,7 @@ import { getSettings } from "./services/settings";
 const IN_FLIGHT_KEY = "run-command.in-flight";
 const IN_FLIGHT_TIMEOUTS_PER_RUN = 2;
 const DIRECT_LAUNCH_MESSAGE =
-  "This runs commands from hotkeys. In Manage AI Commands, choose Create Quicklink on a command, then give it a hotkey";
+  "This runs commands from hotkeys. In AI Commands, choose Create Quicklink on a command, then give it a hotkey";
 const cache = new Cache();
 
 export default async function Command(props: LaunchProps) {
