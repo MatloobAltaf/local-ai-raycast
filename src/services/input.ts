@@ -4,6 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 import type { RunInput } from "../lib/launch-context";
 import { pollForText } from "../lib/poll";
+import { isRestorable } from "../lib/replace";
 import { resolveInput } from "../lib/run-request";
 import { restoreClipboard } from "./clipboard";
 import { getSettings } from "./settings";
@@ -30,6 +31,7 @@ export async function captureInput(): Promise<RunInput | undefined> {
 
 async function copySelection(): Promise<string | undefined> {
   const previous = await Clipboard.read();
+  if (!isRestorable(previous)) return undefined;
   try {
     await Clipboard.clear();
     await execFileAsync("/usr/bin/osascript", ["-e", COPY_KEYSTROKE_SCRIPT]);

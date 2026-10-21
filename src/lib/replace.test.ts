@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clipboardRestoreContent, isRunInFlight, isSameTarget, replaceFailureMessage } from "./replace";
+import { clipboardRestoreContent, isRestorable, isRunInFlight, isSameTarget, replaceFailureMessage } from "./replace";
 
 describe("isRunInFlight", () => {
   const now = 1_000_000;
@@ -95,5 +95,18 @@ describe("clipboardRestoreContent", () => {
   it("returns undefined for an empty clipboard", () => {
     expect(clipboardRestoreContent({ text: "" })).toBeUndefined();
     expect(clipboardRestoreContent({ text: "", html: "", file: "" })).toBeUndefined();
+  });
+});
+
+describe("isRestorable", () => {
+  it("is true for text, html or a file", () => {
+    expect(isRestorable({ text: "hello" })).toBe(true);
+    expect(isRestorable({ text: "", html: "<b>x</b>" })).toBe(true);
+    expect(isRestorable({ text: "", file: "/Users/me/image.png" })).toBe(true);
+  });
+
+  it("is false when nothing can be restored, such as an image-only clipboard", () => {
+    expect(isRestorable({ text: "" })).toBe(false);
+    expect(isRestorable({ text: "", html: "", file: "" })).toBe(false);
   });
 });

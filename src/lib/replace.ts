@@ -42,6 +42,10 @@ export function clipboardRestoreContent(previous: ClipboardSnapshot): ClipboardR
   return undefined;
 }
 
+export function isRestorable(snapshot: ClipboardSnapshot): boolean {
+  return clipboardRestoreContent(snapshot) !== undefined;
+}
+
 function toFilePath(file: string): string {
   return file.startsWith("file://") ? fileURLToPath(file) : file;
 }
