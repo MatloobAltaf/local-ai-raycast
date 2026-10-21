@@ -37,7 +37,7 @@ import { ImportCommandsForm } from "./ImportCommandsForm";
 export { commandIcon } from "./command-icon";
 
 const OUTPUT_LABELS = { replace: "Replace Selection", window: "Show in Window" } as const;
-const QUICKLINK_HINT = "Assign a hotkey to this Quicklink in Raycast Settings, Extensions, Quicklinks";
+const QUICKLINK_HINT = "Assign a hotkey to this Quicklink in Raycast Settings, Extensions, Quicklinks or ⌘⇧L";
 
 export function CommandList(props: { renderRunAction: (command: AiCommand) => ReactNode }) {
   const { commands, isLoading, readOnly, notice, mutate } = useCommands();
