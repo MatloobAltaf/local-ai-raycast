@@ -2,6 +2,7 @@ import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import type { FmError } from "../lib/fm/errors";
 import { isSetupError } from "../services/errors";
 import { usePreflight } from "../hooks/usePreflight";
+import { FeedbackAction } from "./FeedbackAction";
 import { SetupStatus } from "./SetupStatus";
 
 export function FmErrorView(props: { error: FmError; onRetry?: () => void }) {
@@ -12,11 +13,12 @@ export function FmErrorView(props: { error: FmError; onRetry?: () => void }) {
     <Detail
       markdown={`# Something went wrong\n\n${props.error.message}${detail}`}
       actions={
-        props.onRetry && (
-          <ActionPanel>
-            <Action title="Retry" icon={Icon.ArrowClockwise} onAction={props.onRetry} />
-          </ActionPanel>
-        )
+        <ActionPanel>
+          {props.onRetry && <Action title="Retry" icon={Icon.ArrowClockwise} onAction={props.onRetry} />}
+          <ActionPanel.Section>
+            <FeedbackAction />
+          </ActionPanel.Section>
+        </ActionPanel>
       }
     />
   );

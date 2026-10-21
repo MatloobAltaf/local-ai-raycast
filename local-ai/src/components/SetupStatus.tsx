@@ -1,7 +1,9 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import type { PreflightCheck, PreflightCheckId, PreflightResult } from "../lib/preflight";
+import { FEEDBACK_URL } from "../lib/feedback";
 import { getModels } from "../services/models";
+import { FeedbackAction } from "./FeedbackAction";
 
 const APPLE_INTELLIGENCE_URL = "x-apple.systempreferences:com.apple.Siri-Settings.extension";
 const ACCESSIBILITY_URL = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
@@ -78,6 +80,20 @@ export function SetupStatus(props: {
           title="Context"
           subtitle={CONTEXT_NOTE}
           actions={<ActionPanel>{recheck}</ActionPanel>}
+        />
+      </List.Section>
+      <List.Section title="About">
+        <List.Item
+          icon={Icon.Person}
+          title="Made by Matloob Altaf"
+          subtitle="Found a bug or have an idea? Get in touch."
+          accessories={[{ text: FEEDBACK_URL }]}
+          actions={
+            <ActionPanel>
+              <FeedbackAction />
+              {recheck}
+            </ActionPanel>
+          }
         />
       </List.Section>
     </List>

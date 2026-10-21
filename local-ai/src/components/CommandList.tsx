@@ -31,6 +31,7 @@ import { getSettings } from "../services/settings";
 import { commandIcon } from "./command-icon";
 import { CommandForm } from "./CommandForm";
 import { CreateQuicklinkAction } from "./CreateQuicklinkAction";
+import { FeedbackAction } from "./FeedbackAction";
 import { ImportCommandsForm } from "./ImportCommandsForm";
 
 export { commandIcon } from "./command-icon";
@@ -190,6 +191,9 @@ function ManageActions(props: {
           />
         </ActionPanel.Section>
       )}
+      <ActionPanel.Section>
+        <FeedbackAction />
+      </ActionPanel.Section>
     </>
   );
 }
