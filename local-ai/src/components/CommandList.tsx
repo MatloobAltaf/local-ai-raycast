@@ -71,6 +71,18 @@ export function CommandList(props: { mode: "run" | "manage"; renderRunActions?: 
 
   return (
     <List isLoading={isLoading} isShowingDetail searchBarPlaceholder="Search commands">
+      {managing && !readOnly && (
+        <List.Item
+          id="create-new-command"
+          title="Create New Command"
+          icon={Icon.Plus}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Create New Command" icon={Icon.Plus} target={<CommandForm />} />
+            </ActionPanel>
+          }
+        />
+      )}
       <List.Section title="Pinned">{pinned.map(renderItem)}</List.Section>
       <List.Section title={pinned.length > 0 ? "Commands" : undefined}>{others.map(renderItem)}</List.Section>
       {managing && !readOnly && (
@@ -100,16 +112,16 @@ function ManageActions(props: {
       {!readOnly && (
         <ActionPanel.Section>
           <Action.Push
-            title="Create Command"
-            icon={Icon.Plus}
-            shortcut={Keyboard.Shortcut.Common.New}
-            target={<CommandForm />}
-          />
-          <Action.Push
             title="Edit Command"
             icon={Icon.Pencil}
             shortcut={Keyboard.Shortcut.Common.Edit}
             target={<CommandForm command={command} />}
+          />
+          <Action.Push
+            title="Create Command"
+            icon={Icon.Plus}
+            shortcut={Keyboard.Shortcut.Common.New}
+            target={<CommandForm />}
           />
           <Action
             title="Duplicate Command"
