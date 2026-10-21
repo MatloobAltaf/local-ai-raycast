@@ -4,6 +4,8 @@ Run your own AI commands on selected text, with Apple's on-device model.
 
 You don't have to copy your text into a chat window for simple things, and you don't need expensive API keys or subscriptions to do simple things your Mac can already do.
 
+Fix grammar, change the tone or rewrite a sentence right where you type, in any app, without a separate writing assistant.
+
 Local AI is built around commands you define. Write a prompt once, give it a name, and run it on whatever text you have selected. Give your favorite commands their own hotkeys.
 
 ## Custom commands and hotkeys
@@ -20,7 +22,7 @@ To give a command its own hotkey:
 
 The first time a hotkey launches a command, Raycast asks you to confirm. Choose **Always Open** and it won't ask again.
 
-Import and export use Local AI's own JSON format. It is not compatible with Raycast AI's command format.
+Import and export use Local AI's own JSON format.
 
 ## Built-in commands
 
