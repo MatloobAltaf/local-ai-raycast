@@ -1,6 +1,7 @@
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { appendFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
 import { starterCommands } from "./commands/starters";
 import type { AiCommand } from "./commands/types";
 import { respond } from "./fm/client";
@@ -13,7 +14,7 @@ const FORMAL =
   "Dear team, please find attached the quarterly figures. Kindly review them before our meeting on Thursday and share any questions in advance.";
 const GERMAN = "Hey, kannst du mir bis Freitag den Bericht schicken? Danke!";
 
-const RESULTS_PATH = resolve(process.cwd(), "../tmp/local-ai/tuning-results.md");
+const RESULTS_PATH = join(tmpdir(), "local-ai-tuning-results.md");
 const NOW = new Date("2026-10-21T10:00:00Z");
 const TIMEOUT_MS = 60_000;
 const STARTERS = starterCommands(NOW.toISOString(), { model: "system", creativity: "normal" });
@@ -58,8 +59,9 @@ function expectCleanReplacement(raw: string, input: string): string {
 }
 
 describe.skipIf(!process.env.FM_INTEGRATION)("built-in commands on the real model", { timeout: 120_000 }, () => {
-  mkdirSync(dirname(RESULTS_PATH), { recursive: true });
-  writeFileSync(RESULTS_PATH, `# Tuning results (${new Date().toISOString()})\n\n`);
+  beforeAll(() => {
+    writeFileSync(RESULTS_PATH, `# Tuning results (${new Date().toISOString()})\n\n`);
+  });
 
   describe.each(REPLACE_STARTERS.map((command) => [command.name, command] as const))("%s", (_name, command) => {
     const argumentValues: Record<string, string> = command.name === "Translate" ? { language: "French" } : {};
