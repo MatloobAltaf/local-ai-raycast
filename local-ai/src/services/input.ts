@@ -6,6 +6,7 @@ import type { RunInput } from "../lib/launch-context";
 import { pollForText } from "../lib/poll";
 import { resolveInput } from "../lib/run-request";
 import { restoreClipboard } from "./clipboard";
+import { getSettings } from "./settings";
 
 const execFileAsync = promisify(execFile);
 
@@ -17,7 +18,7 @@ export async function readSelection(): Promise<string | undefined> {
   try {
     return await getSelectedText();
   } catch {
-    return await copySelection();
+    return getSettings().copySelectionFallback ? await copySelection() : undefined;
   }
 }
 

@@ -11,6 +11,7 @@ export interface RawPreferences {
   defaultModel?: string;
   defaultCreativity?: string;
   quickAiIncludeSelection?: boolean;
+  copySelectionFallback?: boolean;
   timeoutSeconds?: string;
 }
 
@@ -18,6 +19,7 @@ export interface Settings {
   defaultModel: string;
   defaultCreativity: Creativity;
   quickAiIncludeSelection: boolean;
+  copySelectionFallback: boolean;
   timeoutMs: number;
 }
 
@@ -26,6 +28,7 @@ export function parseSettings(raw: RawPreferences): Settings {
     defaultModel: raw.defaultModel?.trim() || DEFAULT_MODEL,
     defaultCreativity: raw.defaultCreativity === "precise" ? "precise" : DEFAULT_CREATIVITY,
     quickAiIncludeSelection: raw.quickAiIncludeSelection ?? true,
+    copySelectionFallback: raw.copySelectionFallback ?? false,
     timeoutMs: parseTimeoutSeconds(raw.timeoutSeconds) * 1000,
   };
 }

@@ -7,6 +7,7 @@ describe("parseSettings", () => {
       defaultModel: "system",
       defaultCreativity: "normal",
       quickAiIncludeSelection: true,
+      copySelectionFallback: false,
       timeoutMs: 60000,
     });
   });

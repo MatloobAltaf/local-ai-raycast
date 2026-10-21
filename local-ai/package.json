@@ -89,6 +89,15 @@
       "required": false
     },
     {
+      "name": "copySelectionFallback",
+      "type": "checkbox",
+      "title": "Selection",
+      "label": "Copy selection in apps that don't share it",
+      "description": "When an app does not let Raycast read the selected text, copy it and restore your clipboard right after. The copy may appear in clipboard history.",
+      "default": false,
+      "required": false
+    },
+    {
       "name": "timeoutSeconds",
       "type": "textfield",
       "title": "Timeout (Seconds)",
