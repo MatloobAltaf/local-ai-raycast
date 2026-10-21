@@ -46,11 +46,16 @@ describe("looksLikeRefusal", () => {
     expect(looksLikeRefusal("I'm sorry, but I can't help with that.")).toBe(true);
     expect(looksLikeRefusal("I’m sorry, but I can’t help with that.")).toBe(true);
     expect(looksLikeRefusal("I cannot assist with this request.")).toBe(true);
+    expect(looksLikeRefusal("I'm sorry, but I can't help with your request.")).toBe(true);
+    expect(looksLikeRefusal("I apologize, but I can't help with that.")).toBe(true);
+    expect(looksLikeRefusal("I apologize, but I cannot fulfill this request.")).toBe(true);
+    expect(looksLikeRefusal("Unfortunately, I can't assist with that.")).toBe(true);
   });
 
   it("ignores legitimate rewrites", () => {
     expect(looksLikeRefusal("I'm sorry, but I can't make it tomorrow.")).toBe(false);
     expect(looksLikeRefusal("I'm unable to do Friday.")).toBe(false);
+    expect(looksLikeRefusal("Unfortunately, the meeting moved to Friday.")).toBe(false);
     expect(looksLikeRefusal("Thanks for the update.")).toBe(false);
     expect(looksLikeRefusal("I'm sorry, but I can't help with the move on Saturday.")).toBe(false);
   });

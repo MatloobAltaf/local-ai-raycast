@@ -4,9 +4,10 @@ export const PREAMBLE_PATTERNS: RegExp[] = [
 ];
 
 const MAX_PREAMBLE_LINE_LENGTH = 100;
-const REFUSAL_OPENING = /^(?:i'?m sorry|i am sorry|sorry|i can(?:no|')t|i cannot|i am unable|i'?m unable|as an ai)/i;
+const REFUSAL_OPENING =
+  /^(?:i'?m sorry|i am sorry|sorry|i can(?:no|')t|i cannot|i am unable|i'?m unable|i apologi[sz]e|unfortunately|as an ai)/i;
 const REFUSAL_SUBJECT =
-  /help with (?:that|this)|assist|comply|fulfill|this request|that request|as an ai|provide (?:that|this)/i;
+  /help with (?:that|this)|assist|comply|fulfill|(?:your|this|that) request|as an ai|provide (?:that|this)/i;
 const SPEAKER_LABEL = /^(?:assistant|ai|model)\s*:\s*/i;
 const QUOTE_PAIRS: Record<string, string> = { '"': '"', "“": "”" };
 
