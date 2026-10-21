@@ -26,7 +26,7 @@ export function ImportCommandsForm() {
         now: new Date().toISOString(),
         defaults: { model: settings.defaultModel, creativity: settings.defaultCreativity },
       });
-      await mutate((current) => [...current, ...report.imported]);
+      if (!(await mutate((current) => [...current, ...report.imported]))) return;
       const skipped = report.skipped.length;
       await showToast({
         style: skipped > 0 ? Toast.Style.Failure : Toast.Style.Success,

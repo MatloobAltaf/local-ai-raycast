@@ -62,9 +62,10 @@ export function CommandForm(props: { command?: AiCommand; onSaved?: (command: Ai
     const saved = command
       ? updateCommand(command, { ...fields, name: fields.name.trim() }, now)
       : createCommand(fields, { id: crypto.randomUUID(), now });
-    await mutate((current) =>
+    const ok = await mutate((current) =>
       command ? current.map((item) => (item.id === saved.id ? saved : item)) : [...current, saved],
     );
+    if (!ok) return;
     await showToast({ style: Toast.Style.Success, title: command ? "Command saved" : "Command created" });
     props.onSaved?.(saved);
     pop();

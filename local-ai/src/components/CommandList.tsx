@@ -91,7 +91,7 @@ function ManageActions(props: {
   command: AiCommand;
   commands: AiCommand[];
   readOnly: boolean;
-  mutate: (change: (current: AiCommand[]) => AiCommand[]) => Promise<void>;
+  mutate: (change: (current: AiCommand[]) => AiCommand[]) => Promise<boolean>;
 }) {
   const { command, commands, readOnly, mutate } = props;
 

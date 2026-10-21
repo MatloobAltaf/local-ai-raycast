@@ -6,26 +6,29 @@ import { loadCommands, saveCommands } from "../services/command-store";
 export function useCommands() {
   const { data, isLoading, revalidate } = useCachedPromise(loadCommands);
 
-  async function mutate(change: (current: AiCommand[]) => AiCommand[]): Promise<void> {
+  async function mutate(change: (current: AiCommand[]) => AiCommand[]): Promise<boolean> {
     if (data?.readOnly) {
       await showToast({ style: Toast.Style.Failure, title: "Commands are read-only", message: data.notice });
-      return;
+      return false;
     }
     const latest = await loadCommands();
     if (latest.readOnly) {
       await showToast({ style: Toast.Style.Failure, title: "Commands are read-only", message: latest.notice });
-      return;
+      return false;
     }
     try {
       await saveCommands(change(latest.commands));
+      return true;
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Could not save commands",
         message: error instanceof Error ? error.message : String(error),
       });
+      return false;
+    } finally {
+      revalidate();
     }
-    revalidate();
   }
 
   return {
