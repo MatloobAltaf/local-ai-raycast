@@ -71,6 +71,7 @@ export function AnswerView(props: { question: string; selection?: string; onAskW
                   <ContinueInChatAction
                     userMessage={buildQuickAiStdin(question, selection)}
                     assistantMessage={answer}
+                    title={question}
                   />
                 )}
               </>
