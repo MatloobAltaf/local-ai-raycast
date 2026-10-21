@@ -88,7 +88,7 @@
     {
       "name": "quickAiIncludeSelection",
       "type": "checkbox",
-      "title": "Quick AI",
+      "title": "Ask Local AI",
       "label": "Include selected text as context",
       "description": "Include the selected text as context in Ask Local AI.",
       "default": true,
@@ -124,6 +124,6 @@
     "test": "vitest run",
     "test:fm": "FM_INTEGRATION=1 vitest run src/lib/starters.integration.test.ts",
     "publish": "npx @raycast/api@latest publish",
-    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the AI-generated extension to npm.\\nPlease use `npx @raycast/api@latest publish` instead.\\n\\n\" && exit 1"
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1"
   }
 }
