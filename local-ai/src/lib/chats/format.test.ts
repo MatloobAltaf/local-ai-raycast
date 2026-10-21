@@ -28,6 +28,12 @@ describe("turnToMarkdown", () => {
   it("embeds the attached image as an encoded file URL", () => {
     expect(turnToMarkdown(turn("q", "a", "/tmp/my pic.png"))).toContain("![Attached image](file:///tmp/my%20pic.png)");
   });
+
+  it("percent-encodes parentheses so the image link stays intact", () => {
+    expect(turnToMarkdown(turn("q", "a", "/tmp/pic (1).png"))).toContain(
+      "![Attached image](file:///tmp/pic%20%281%29.png)",
+    );
+  });
 });
 
 describe("conversationToText", () => {
