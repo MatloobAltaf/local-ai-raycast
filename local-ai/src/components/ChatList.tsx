@@ -49,6 +49,14 @@ export function ChatList(props: { seed?: ChatSeed }) {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search chats">
+      {!readOnly && (
+        <List.Item
+          id="new-chat"
+          title="New Chat"
+          icon={Icon.Plus}
+          actions={<ActionPanel>{newChatAction}</ActionPanel>}
+        />
+      )}
       {notice && <List.Item icon={Icon.Info} title={notice} actions={<ActionPanel>{newChatAction}</ActionPanel>} />}
       {sorted.length === 0 && !notice && (
         <List.EmptyView
