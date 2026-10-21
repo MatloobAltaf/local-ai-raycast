@@ -37,14 +37,16 @@ const STARTER_SPECS: StarterSpec[] = [
     icon: "Minimize",
     creativity: "normal",
     output: "replace",
-    prompt: "Rewrite {selection} to be noticeably shorter while keeping the key points and the language.",
+    prompt:
+      "Rewrite {selection} so it is about half as long. Drop filler and secondary details, keep the key points and the language.",
   },
   {
     name: "Make Longer",
     icon: "Maximize",
     creativity: "normal",
     output: "replace",
-    prompt: "Expand {selection} with more detail and explanation, keeping its tone and language.",
+    prompt:
+      "Rewrite {selection} so it is longer and more fully worded, keeping its tone and language. Add only elaboration of what it already says. Do not invent facts, names, dates or commitments, and do not add a sign-off or an offer of further help.",
   },
   {
     name: "Fix Spelling and Grammar",
