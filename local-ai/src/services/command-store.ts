@@ -1,5 +1,5 @@
 import { LocalStorage } from "@raycast/api";
-import { migrateCommandStore } from "../lib/commands/schema";
+import { commandStoreSpec } from "../lib/commands/schema";
 import { starterCommands } from "../lib/commands/starters";
 import {
   COMMAND_STORE_VERSION,
@@ -8,6 +8,7 @@ import {
   type AiCommand,
   type CommandDefaults,
 } from "../lib/commands/types";
+import { backupKey, isNewerStore, planVersionedLoad } from "../lib/versioned-store";
 import { getSettings } from "./settings";
 
 export interface LoadedCommands {
@@ -16,38 +17,31 @@ export interface LoadedCommands {
   notice?: string;
 }
 
-const CORRUPT_NOTICE = "Saved commands could not be read. A backup was kept and the starter commands were restored.";
-const NEWER_NOTICE = "These commands were saved by a newer version of Local AI. Update the extension to edit them.";
+const NOTICES = {
+  corrupt: "Saved commands could not be read. A backup was kept and the starter commands were restored.",
+  partial: "Some saved commands could not be read and were backed up.",
+  newer: "These commands were saved by a newer version of Local AI. Update the extension to edit them.",
+};
 
 export async function loadCommands(): Promise<LoadedCommands> {
-  const raw = await LocalStorage.getItem<string>(COMMANDS_STORAGE_KEY);
   const defaults = commandDefaults();
-  const result = migrateCommandStore(raw, defaults);
+  const plan = planVersionedLoad(
+    await LocalStorage.getItem<string>(COMMANDS_STORAGE_KEY),
+    commandStoreSpec(defaults),
+    () => ({ version: COMMAND_STORE_VERSION, commands: starterCommands(new Date().toISOString(), defaults) }),
+  );
+  if (plan.readOnly) return { commands: [], readOnly: true, notice: NOTICES.newer };
 
-  switch (result.kind) {
-    case "ok":
-      if (result.changed) await saveCommands(result.store.commands);
-      return { commands: result.store.commands, readOnly: false };
-    case "empty":
-      return { commands: await saveStarters(defaults), readOnly: false };
-    case "corrupt":
-      await LocalStorage.setItem(COMMANDS_BACKUP_KEY, result.raw);
-      return { commands: await saveStarters(defaults), readOnly: false, notice: CORRUPT_NOTICE };
-    case "newer":
-      return { commands: [], readOnly: true, notice: NEWER_NOTICE };
-  }
+  if (plan.backup !== undefined) await LocalStorage.setItem(backupKey(COMMANDS_BACKUP_KEY, new Date()), plan.backup);
+  if (plan.save) await saveCommands(plan.store.commands);
+  return { commands: plan.store.commands, readOnly: false, notice: plan.notice && NOTICES[plan.notice] };
 }
 
 export async function saveCommands(commands: AiCommand[]): Promise<void> {
-  const current = migrateCommandStore(await LocalStorage.getItem<string>(COMMANDS_STORAGE_KEY), commandDefaults());
-  if (current.kind === "newer") throw new Error(NEWER_NOTICE);
+  if (isNewerStore(await LocalStorage.getItem<string>(COMMANDS_STORAGE_KEY), COMMAND_STORE_VERSION)) {
+    throw new Error(NOTICES.newer);
+  }
   await LocalStorage.setItem(COMMANDS_STORAGE_KEY, JSON.stringify({ version: COMMAND_STORE_VERSION, commands }));
-}
-
-async function saveStarters(defaults: CommandDefaults): Promise<AiCommand[]> {
-  const starters = starterCommands(new Date().toISOString(), defaults);
-  await saveCommands(starters);
-  return starters;
 }
 
 function commandDefaults(): CommandDefaults {

@@ -32,7 +32,12 @@ describe("migrateCommandStore", () => {
 
   it("leaves a complete store unchanged", () => {
     const result = migrateCommandStore(store([validCommand]), defaults);
-    expect(result).toEqual({ kind: "ok", store: { version: 1, commands: [validCommand] }, changed: false });
+    expect(result).toEqual({
+      kind: "ok",
+      store: { version: 1, commands: [validCommand] },
+      changed: false,
+      dropped: 0,
+    });
   });
 
   it("defaults a missing pinned flag and reports a change", () => {
@@ -45,8 +50,22 @@ describe("migrateCommandStore", () => {
 
   it("drops invalid entries and reports a change", () => {
     const result = migrateCommandStore(store([validCommand, { name: 5 }, null]), defaults);
-    expect(result).toMatchObject({ kind: "ok", changed: true });
+    expect(result).toMatchObject({ kind: "ok", changed: true, dropped: 2 });
     if (result.kind === "ok") expect(result.store.commands).toEqual([validCommand]);
+  });
+
+  it("treats a store with only invalid entries as corrupt", () => {
+    const raw = store([{ name: 5 }, null]);
+    expect(migrateCommandStore(raw, defaults)).toEqual({ kind: "corrupt", raw });
+  });
+
+  it("keeps a store whose commands were all deleted", () => {
+    expect(migrateCommandStore(store([]), defaults)).toEqual({
+      kind: "ok",
+      store: { version: 1, commands: [] },
+      changed: false,
+      dropped: 0,
+    });
   });
 });
 

@@ -1,20 +1,22 @@
-import { isRecord, loadVersionedStore, type VersionedLoad } from "../versioned-store";
+import { isRecord, loadVersionedStore, type VersionedLoad, type VersionedStoreSpec } from "../versioned-store";
 import { CHAT_STORE_VERSION, type Chat, type ChatMessage, type ChatStore } from "./types";
 
 export type ChatMigrateResult = VersionedLoad<ChatStore>;
 
 export function migrateChatStore(raw: string | undefined): ChatMigrateResult {
-  return loadVersionedStore(raw, {
-    version: CHAT_STORE_VERSION,
-    parse: (value) => {
-      const entries: unknown = value.chats;
-      if (!Array.isArray(entries)) return undefined;
-      const chats = entries.flatMap((entry) => normalizeChat(entry) ?? []);
-      const changed = chats.length !== entries.length || chats.some((c, i) => !sameChat(c, entries[i]));
-      return { store: { version: CHAT_STORE_VERSION, chats }, changed };
-    },
-  });
+  return loadVersionedStore(raw, CHAT_STORE_SPEC);
 }
+
+export const CHAT_STORE_SPEC: VersionedStoreSpec<ChatStore> = {
+  version: CHAT_STORE_VERSION,
+  parse: (value) => {
+    const entries: unknown = value.chats;
+    if (!Array.isArray(entries)) return undefined;
+    const chats = entries.flatMap((entry) => normalizeChat(entry) ?? []);
+    const changed = chats.length !== entries.length || chats.some((c, i) => !sameChat(c, entries[i]));
+    return { store: { version: CHAT_STORE_VERSION, chats }, changed, entries: entries.length, kept: chats.length };
+  },
+};
 
 function normalizeChat(value: unknown): Chat | undefined {
   if (!isRecord(value)) return undefined;

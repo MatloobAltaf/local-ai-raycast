@@ -1,4 +1,4 @@
-import { isRecord, loadVersionedStore, type VersionedLoad } from "../versioned-store";
+import { isRecord, loadVersionedStore, type VersionedLoad, type VersionedStoreSpec } from "../versioned-store";
 import {
   COMMAND_STORE_VERSION,
   DEFAULT_ICON,
@@ -14,16 +14,25 @@ export function migrateCommandStore(
   raw: string | undefined,
   defaults: CommandDefaults = FALLBACK_DEFAULTS,
 ): MigrateResult {
-  return loadVersionedStore(raw, {
+  return loadVersionedStore(raw, commandStoreSpec(defaults));
+}
+
+export function commandStoreSpec(defaults: CommandDefaults = FALLBACK_DEFAULTS): VersionedStoreSpec<CommandStore> {
+  return {
     version: COMMAND_STORE_VERSION,
     parse: (value) => {
       const entries: unknown = value.commands;
       if (!Array.isArray(entries)) return undefined;
       const commands = entries.flatMap((entry) => normalizeCommand(entry, defaults) ?? []);
       const changed = commands.length !== entries.length || commands.some((c, i) => !sameShape(c, entries[i]));
-      return { store: { version: COMMAND_STORE_VERSION, commands }, changed };
+      return {
+        store: { version: COMMAND_STORE_VERSION, commands },
+        changed,
+        entries: entries.length,
+        kept: commands.length,
+      };
     },
-  });
+  };
 }
 
 export function normalizeCommand(value: unknown, defaults: CommandDefaults): AiCommand | undefined {

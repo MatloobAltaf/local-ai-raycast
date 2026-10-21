@@ -20,7 +20,7 @@ describe("migrateChatStore", () => {
 
   it("leaves a complete store unchanged", () => {
     const result = migrateChatStore(JSON.stringify({ version: 1, chats: [chat] }));
-    expect(result).toEqual({ kind: "ok", store: { version: 1, chats: [chat] }, changed: false });
+    expect(result).toEqual({ kind: "ok", store: { version: 1, chats: [chat] }, changed: false, dropped: 0 });
   });
 
   it("gives a message missing createdAt the chat's createdAt", () => {
@@ -29,5 +29,10 @@ describe("migrateChatStore", () => {
     const result = migrateChatStore(JSON.stringify({ version: 1, chats: [{ ...chat, messages: [bare] }] }));
     expect(result).toMatchObject({ kind: "ok", changed: true });
     if (result.kind === "ok") expect(result.store.chats[0].messages[0].createdAt).toBe(chat.createdAt);
+  });
+
+  it("counts dropped chats", () => {
+    const result = migrateChatStore(JSON.stringify({ version: 1, chats: [chat, { title: "No id" }] }));
+    expect(result).toMatchObject({ kind: "ok", changed: true, dropped: 1 });
   });
 });
