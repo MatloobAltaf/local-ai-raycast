@@ -1,7 +1,9 @@
 import { Action, ActionPanel, Icon, List, showToast, Toast, useNavigation } from "@raycast/api";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { appendMessage, toTurns } from "../lib/chats/operations";
-import { buildChatInstructions, buildChatStdin } from "../lib/chats/transcript";
+import { buildChatInstructions, buildChatStdin, replayContent } from "../lib/chats/transcript";
 import type { Chat, ChatMessage } from "../lib/chats/types";
 import { countTokens, respond } from "../lib/fm/client";
 import { tooLongMessage } from "../lib/fm/errors";
@@ -17,6 +19,7 @@ import {
 } from "../lib/tokens";
 import { getSettings } from "../services/settings";
 import { showFmErrorToast } from "../services/errors";
+import { AttachImageForm } from "./AttachImageForm";
 import { ChatSettingsForm } from "./ChatSettingsForm";
 
 interface StreamingTurn {
@@ -29,6 +32,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
   const [chat, setChat] = useState(props.chat);
   const [composer, setComposer] = useState("");
   const [streaming, setStreaming] = useState<StreamingTurn>();
+  const [pendingImage, setPendingImage] = useState<string>();
   const [framingTokens, setFramingTokens] = useState(0);
   const chatRef = useRef(chat);
   const controllerRef = useRef<AbortController | undefined>(undefined);
@@ -53,29 +57,45 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
 
   async function send(text: string): Promise<void> {
     const content = text.trim();
+    const imagePath = pendingImage;
+    if (imagePath && !existsSync(imagePath)) {
+      setPendingImage(undefined);
+      await showToast({ style: Toast.Style.Failure, title: "Image not found" });
+      return;
+    }
     const controller = new AbortController();
     controllerRef.current = controller;
     const { signal } = controller;
     const { timeoutMs, defaultModel, defaultCreativity } = getSettings();
     const instructions = buildChatInstructions(chatRef.current.instructions);
-    const countMessage = async (value: string, framing: number) =>
-      inputTokensFrom(await countTokens(value, { instructions, timeoutMs, signal }), framing);
+    const countMessage = async (value: string, framing: number, imagePaths?: string[]) =>
+      inputTokensFrom(await countTokens(value, { instructions, imagePaths, timeoutMs, signal }), framing);
 
     try {
       const framing = await countTokens("", { instructions, timeoutMs, signal });
-      const messageTokens = await countMessage(content, framing);
+      const imagePaths = imagePath ? [imagePath] : undefined;
+      const messageTokens = await countMessage(content, framing, imagePaths).catch((error: unknown) => {
+        if (!imagePaths || signal.aborted) throw error;
+        return countMessage(content, framing);
+      });
       const limit = questionInputLimit(framing);
       if (messageTokens > limit) {
         await showToast({ style: Toast.Style.Failure, title: tooLongMessage(messageTokens, limit) });
         return;
       }
+      const storedTokens = imagePath
+        ? await countMessage(replayContent({ content, imagePath }), framing)
+        : messageTokens;
       setComposer("");
+      setPendingImage(undefined);
       setFramingTokens(framing);
 
       const counted: ChatMessage[] = [];
       for (const message of chatRef.current.messages) {
         counted.push(
-          message.tokens === undefined ? { ...message, tokens: await countMessage(message.content, framing) } : message,
+          message.tokens === undefined
+            ? { ...message, tokens: await countMessage(replayContent(message), framing) }
+            : message,
         );
       }
       const priorTurns = toTurns(counted);
@@ -94,7 +114,8 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
         id: crypto.randomUUID(),
         role: "user",
         content,
-        tokens: messageTokens,
+        tokens: storedTokens,
+        ...(imagePath ? { imagePath } : {}),
         createdAt: now,
       };
       await commit(appendMessage({ ...chatRef.current, messages: counted }, userMessage, now));
@@ -107,6 +128,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
         useCase: "general",
         guardrails: "default",
         stream: true,
+        imagePaths,
         timeoutMs,
         signal,
         onText: (accumulated) => {
@@ -151,6 +173,15 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
     <>
       {isStreaming && <Action title="Stop" icon={Icon.Stop} onAction={() => controllerRef.current?.abort()} />}
       <Action
+        title="Attach Image"
+        icon={Icon.Image}
+        shortcut={{ modifiers: ["cmd"], key: "i" }}
+        onAction={() => push(<AttachImageForm onAttach={setPendingImage} />)}
+      />
+      {pendingImage && (
+        <Action title="Remove Attached Image" icon={Icon.XMarkCircle} onAction={() => setPendingImage(undefined)} />
+      )}
+      <Action
         title="Edit Instructions"
         icon={Icon.Pencil}
         onAction={() => push(<ChatSettingsForm instructions={chat.instructions} onSave={saveInstructions} />)}
@@ -163,7 +194,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<v
       navigationTitle={`${chat.title} · Context ${percent}%`}
       isShowingDetail={turns.length > 0}
       filtering={false}
-      searchBarPlaceholder="Type a message"
+      searchBarPlaceholder={pendingImage ? `Type a message (image: ${path.basename(pendingImage)})` : "Type a message"}
       searchText={composer}
       onSearchTextChange={setComposer}
       isLoading={isStreaming}

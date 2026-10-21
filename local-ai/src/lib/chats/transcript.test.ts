@@ -23,6 +23,15 @@ describe("buildChatStdin", () => {
     const history: ChatTurn[] = [{ user: message("user", "Q1") }];
     expect(buildChatStdin(history, "Q2")).toBe("Conversation so far:\nUser: Q1\n\nNew message from User:\nQ2");
   });
+
+  it("marks a past message that had an image without resending it", () => {
+    const history: ChatTurn[] = [
+      { user: { ...message("user", "Q1"), imagePath: "/tmp/a.png" }, assistant: message("assistant", "A1") },
+    ];
+    expect(buildChatStdin(history, "Q2")).toBe(
+      "Conversation so far:\nUser: Q1 [image attached]\nAssistant: A1\n\nNew message from User:\nQ2",
+    );
+  });
 });
 
 describe("buildChatInstructions", () => {
