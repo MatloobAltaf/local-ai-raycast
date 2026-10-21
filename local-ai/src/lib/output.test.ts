@@ -56,6 +56,7 @@ describe("looksLikeRefusal", () => {
     expect(looksLikeRefusal("I'm sorry, but I can't make it tomorrow.")).toBe(false);
     expect(looksLikeRefusal("I'm unable to do Friday.")).toBe(false);
     expect(looksLikeRefusal("Unfortunately, the meeting moved to Friday.")).toBe(false);
+    expect(looksLikeRefusal("Unfortunately, we cannot fulfill your order until Monday.")).toBe(false);
     expect(looksLikeRefusal("Thanks for the update.")).toBe(false);
     expect(looksLikeRefusal("I'm sorry, but I can't help with the move on Saturday.")).toBe(false);
   });
