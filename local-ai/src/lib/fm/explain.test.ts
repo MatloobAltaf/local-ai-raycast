@@ -41,6 +41,11 @@ describe("explainFmError", () => {
     expect(result.explanation).toBe("The on-device model returned an error.");
   });
 
+  it("appends the first stderr line for an invalid model", () => {
+    const result = explainFmError(new FmError("invalidModel", "Bad model", "Error: 'pcc' is invalid\nmore"));
+    expect(result.explanation).toBe("The on-device model returned an error. Error: 'pcc' is invalid");
+  });
+
   it("appends the first stderr line for unknown errors", () => {
     expect(explainFmError(new FmError("unknown", "boom", "line one\nline two")).explanation).toBe(
       "The on-device model returned an error. line one",

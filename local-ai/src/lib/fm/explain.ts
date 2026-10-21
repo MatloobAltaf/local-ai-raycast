@@ -6,6 +6,7 @@ export interface FmErrorExplanation {
 }
 
 const CHECK_SETUP_HINT = "Open Check Setup to fix this.";
+const MODEL_ERROR_EXPLANATION = "The on-device model returned an error.";
 const STOPPED_TITLE = "Stopped";
 
 export function explainFmError(error: FmError): FmErrorExplanation {
@@ -30,17 +31,14 @@ export function explainFmError(error: FmError): FmErrorExplanation {
     case "unavailable":
       return { title: error.message, explanation: CHECK_SETUP_HINT };
     case "invalidModel":
-      return { title: error.message, explanation: "The on-device model returned an error." };
-    case "unknown": {
-      const firstLine = error.detail?.split("\n")[0].trim();
-      return {
-        title: error.message,
-        explanation: firstLine
-          ? `The on-device model returned an error. ${firstLine}`
-          : "The on-device model returned an error.",
-      };
-    }
+    case "unknown":
+      return { title: error.message, explanation: modelErrorExplanation(error) };
   }
+}
+
+function modelErrorExplanation(error: FmError): string {
+  const firstLine = error.detail?.split("\n")[0].trim();
+  return firstLine ? `${MODEL_ERROR_EXPLANATION} ${firstLine}` : MODEL_ERROR_EXPLANATION;
 }
 
 export function errorBlockMarkdown(title: string, explanation?: string): string {
