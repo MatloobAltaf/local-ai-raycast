@@ -16,9 +16,9 @@ const SYSTEM_MODEL = "system";
 const PERMISSIVE_GUARDRAILS = "permissive-content-transformations";
 
 export function buildRespondArgs(options: RespondOptions): string[] {
-  const args = ["respond", "--model", options.model];
+  const args = ["respond", `--model=${options.model}`];
   const instructions = options.instructions;
-  if (instructions?.trim()) args.push("--instructions", instructions);
+  if (instructions?.trim()) args.push(`--instructions=${instructions}`);
   if (options.model === SYSTEM_MODEL) {
     args.push("--use-case", options.useCase);
     args.push("--guardrails", options.guardrails === "permissive" ? PERMISSIVE_GUARDRAILS : "default");
@@ -31,10 +31,10 @@ export function buildRespondArgs(options: RespondOptions): string[] {
 export function buildCountTokensArgs(options: { instructions?: string; imagePaths?: string[] }): string[] {
   const args = ["count-tokens", "--quiet"];
   const instructions = options.instructions;
-  if (instructions?.trim()) args.push("--instructions", instructions);
+  if (instructions?.trim()) args.push(`--instructions=${instructions}`);
   return [...args, ...imageArgs(options.imagePaths)];
 }
 
 function imageArgs(imagePaths: string[] | undefined): string[] {
-  return (imagePaths ?? []).flatMap((path) => ["--image", path]);
+  return (imagePaths ?? []).map((path) => `--image=${path}`);
 }
