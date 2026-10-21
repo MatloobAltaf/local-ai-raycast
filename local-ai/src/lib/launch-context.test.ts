@@ -6,6 +6,7 @@ describe("launch context guards", () => {
     expect(isRunCommandLaunchContext({ commandId: "abc" })).toBe(true);
     expect(isRunCommandLaunchContext({ commandId: "" })).toBe(false);
     expect(isRunCommandLaunchContext(undefined)).toBe(false);
+    expect(isRunCommandLaunchContext([])).toBe(false);
   });
 
   it("validates the optional input of a run-view context", () => {
