@@ -1,13 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { FmError, type FmErrorKind } from "./errors";
+import { FmError, type FmErrorKind, tooLongMessage } from "./errors";
 import { errorBlockMarkdown, explainFmError } from "./explain";
 
 describe("explainFmError", () => {
-  it("explains the context window for overflow", () => {
-    const { title, explanation } = explainFmError(new FmError("contextOverflow", "Text is too long"));
-    expect(title).toBe("Too long for the on-device model");
-    expect(explanation).toContain("4,096 tokens");
-    expect(explanation).toContain("new chat");
+  it("uses the exact too-long copy with token counts as the title", () => {
+    const message = tooLongMessage(5000, 2900);
+    expect(explainFmError(new FmError("contextOverflow", message)).title).toBe(
+      "Text is too long for the on-device model (5000 tokens, limit 2900)",
+    );
+    expect(explainFmError(new FmError("contextOverflow", tooLongMessage())).title).toBe(
+      "Text is too long for the on-device model",
+    );
+  });
+
+  it("suggests a new chat only on the chat surface", () => {
+    const error = new FmError("contextOverflow", tooLongMessage());
+    const chat = explainFmError(error, { surface: "chat" }).explanation;
+    expect(chat).toContain("4,096 tokens");
+    expect(chat).toContain("new chat");
+    const single = explainFmError(error, { surface: "single" }).explanation;
+    expect(single).toContain("shorter text");
+    expect(single).toContain("shorter answer");
+    expect(single).not.toContain("new chat");
+    expect(explainFmError(error).explanation).toBe(single);
   });
 
   it("keeps the timeout message with its seconds", () => {

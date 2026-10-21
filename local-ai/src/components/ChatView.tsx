@@ -191,7 +191,7 @@ export function ChatView(props: { chat: Chat; persist: (chat: Chat) => Promise<b
       }
     } catch (error) {
       const fmError = toFmError(error);
-      const { title, explanation } = explainFmError(fmError);
+      const { title, explanation } = explainFmError(fmError, { surface: "chat" });
       const keptText = answered ? "" : stripSpeakerLabel(finalizeWindowText(partial));
       if (userMessageId && !answered) {
         if (keptText) {

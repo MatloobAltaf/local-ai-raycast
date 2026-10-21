@@ -7,15 +7,22 @@ export interface FmErrorExplanation {
 
 const CHECK_SETUP_HINT = "Open Check Setup to fix this.";
 const MODEL_ERROR_EXPLANATION = "The on-device model returned an error.";
+const OVERFLOW_BASE_EXPLANATION =
+  "The on-device model handles about 4,096 tokens per request, counting the text and the answer together.";
+const OVERFLOW_SINGLE_EXPLANATION = `${OVERFLOW_BASE_EXPLANATION} Try shorter text or ask for a shorter answer.`;
+const OVERFLOW_CHAT_EXPLANATION = `${OVERFLOW_BASE_EXPLANATION} Try shorter text, ask for a shorter answer, or start a new chat.`;
 const STOPPED_TITLE = "Stopped";
 
-export function explainFmError(error: FmError): FmErrorExplanation {
+export interface ExplainOptions {
+  surface?: "chat" | "single";
+}
+
+export function explainFmError(error: FmError, options: ExplainOptions = {}): FmErrorExplanation {
   switch (error.kind) {
     case "contextOverflow":
       return {
-        title: "Too long for the on-device model",
-        explanation:
-          "The on-device model handles about 4,096 tokens per request, counting the text and the answer together. Try shorter text, ask for a shorter answer, or start a new chat.",
+        title: error.message,
+        explanation: options.surface === "chat" ? OVERFLOW_CHAT_EXPLANATION : OVERFLOW_SINGLE_EXPLANATION,
       };
     case "timeout":
       return { title: "Timed out", explanation: error.message };
