@@ -15,16 +15,20 @@ const COPY_POLL_INTERVAL_MS = 25;
 const COPY_POLL_TIMEOUT_MS = 500;
 const COPY_KEYSTROKE_SCRIPT = 'tell application "System Events" to keystroke "c" using command down';
 
-export async function readSelection(): Promise<string | undefined> {
+interface CaptureOptions {
+  allowCopyFallback?: boolean;
+}
+
+export async function readSelection({ allowCopyFallback = false }: CaptureOptions = {}): Promise<string | undefined> {
   try {
     return await getSelectedText();
   } catch {
-    return getSettings().copySelectionFallback ? await copySelection() : undefined;
+    return allowCopyFallback && getSettings().copySelectionFallback ? await copySelection() : undefined;
   }
 }
 
-export async function captureInput(): Promise<RunInput | undefined> {
-  const selection = await readSelection();
+export async function captureInput(options: CaptureOptions = {}): Promise<RunInput | undefined> {
+  const selection = await readSelection(options);
   if (selection?.trim()) return resolveInput(selection, undefined);
   return resolveInput(selection, await Clipboard.readText());
 }
