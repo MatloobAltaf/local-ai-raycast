@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import type { PreflightCheck, PreflightCheckId, PreflightResult } from "../lib/preflight";
-import { FEEDBACK_URL } from "../lib/feedback";
+import { AUTHOR_URL } from "../lib/feedback";
 import { getModels } from "../services/models";
 import { FeedbackAction } from "./FeedbackAction";
 
@@ -86,11 +86,12 @@ export function SetupStatus(props: {
         <List.Item
           icon={Icon.Person}
           title="Made by Matloob Altaf"
-          subtitle="Found a bug or have an idea? Get in touch."
-          accessories={[{ text: FEEDBACK_URL }]}
+          subtitle="Found a bug or have an idea? Open a GitHub issue."
+          accessories={[{ text: "GitHub Issues" }]}
           actions={
             <ActionPanel>
               <FeedbackAction />
+              <Action.OpenInBrowser title="Visit Author Website" icon={Icon.Globe} url={AUTHOR_URL} />
               {recheck}
             </ActionPanel>
           }

@@ -1,10 +1,10 @@
 # Contributing to Local AI
 
-Thanks for helping out. For anything bigger than a small fix, share your idea first at [matloob.pk](https://matloob.pk) so we can agree on the approach before you spend time on it.
+Thanks for helping out. For anything bigger than a small fix, open a [GitHub issue](https://github.com/MatloobAltaf/local-ai-raycast/issues) to discuss your idea first so we can agree on the approach before you spend time on it.
 
 ## Reporting a bug
 
-Report bugs at [matloob.pk](https://matloob.pk) or with **Report Bug** on the extension's store page. Please include:
+Report bugs in [GitHub issues](https://github.com/MatloobAltaf/local-ai-raycast/issues). Please include:
 
 - Your macOS version
 - What you selected or typed

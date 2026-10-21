@@ -76,7 +76,7 @@ The on-device model handles about 4,096 tokens per request, and that includes it
 
 ## Feedback and contributing
 
-Report bugs and share ideas at [matloob.pk](https://matloob.pk), in [GitHub issues](https://github.com/MatloobAltaf/local-ai-raycast/issues), or with the **Report Bug** option on the extension's store page.
+Report bugs and share ideas in [GitHub issues](https://github.com/MatloobAltaf/local-ai-raycast/issues). Ideas are discussed there before anything gets built.
 
 The source lives at [MatloobAltaf/local-ai-raycast](https://github.com/MatloobAltaf/local-ai-raycast). Pull requests are welcome there. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
