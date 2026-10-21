@@ -1,5 +1,7 @@
-import { Detail } from "@raycast/api";
+import { SetupStatus } from "./components/SetupStatus";
+import { usePreflight } from "./hooks/usePreflight";
 
 export default function Command() {
-  return <Detail markdown="Coming soon" />;
+  const { result, isLoading, recheck } = usePreflight();
+  return <SetupStatus result={result} isLoading={isLoading} onRecheck={recheck} />;
 }
