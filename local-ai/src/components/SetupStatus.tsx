@@ -14,12 +14,31 @@ const STATUS_ICONS: Record<PreflightCheck["status"], { source: Icon; tintColor: 
   skipped: { source: Icon.Circle, tintColor: Color.SecondaryText },
 };
 
-export function SetupStatus(props: { result?: PreflightResult; isLoading: boolean; onRecheck: () => void }) {
+export function SetupStatus(props: {
+  result?: PreflightResult;
+  isLoading: boolean;
+  onRecheck: () => void;
+  error?: string;
+}) {
   const { data: models, isLoading: modelsLoading } = usePromise(getModels);
   const recheck = <Action title="Recheck" icon={Icon.ArrowClockwise} onAction={props.onRecheck} />;
 
   return (
     <List isLoading={props.isLoading || modelsLoading}>
+      {props.error && (
+        <List.Section title="Error">
+          <List.Item
+            icon={STATUS_ICONS.failed}
+            title={props.error}
+            actions={
+              <ActionPanel>
+                <Action.CopyToClipboard title="Copy Error" content={props.error} />
+                {recheck}
+              </ActionPanel>
+            }
+          />
+        </List.Section>
+      )}
       <List.Section title="Setup">
         {props.result?.checks.map((check) => (
           <List.Item

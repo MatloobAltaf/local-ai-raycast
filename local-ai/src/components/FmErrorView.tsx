@@ -5,7 +5,7 @@ import { usePreflight } from "../hooks/usePreflight";
 import { SetupStatus } from "./SetupStatus";
 
 export function FmErrorView(props: { error: FmError; onRetry?: () => void }) {
-  if (isSetupError(props.error)) return <SetupErrorView />;
+  if (isSetupError(props.error)) return <SetupErrorView message={props.error.message} />;
 
   const detail = props.error.detail ? `\n\n\`\`\`\n${props.error.detail}\n\`\`\`` : "";
   return (
@@ -22,7 +22,7 @@ export function FmErrorView(props: { error: FmError; onRetry?: () => void }) {
   );
 }
 
-function SetupErrorView() {
-  const { result, isLoading, recheck } = usePreflight();
-  return <SetupStatus result={result} isLoading={isLoading} onRecheck={recheck} />;
+function SetupErrorView(props: { message: string }) {
+  const { result, isLoading, recheck } = usePreflight({ force: true });
+  return <SetupStatus result={result} isLoading={isLoading} onRecheck={recheck} error={props.message} />;
 }
