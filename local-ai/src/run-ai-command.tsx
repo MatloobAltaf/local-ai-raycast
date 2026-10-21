@@ -4,6 +4,7 @@ import {
   Detail,
   Icon,
   List,
+  PopToRootType,
   showToast,
   Toast,
   useNavigation,
@@ -99,6 +100,6 @@ function DirectRun(props: { context: RunViewLaunchContext; input?: RunInput }) {
 }
 
 async function replaceInPreviousApp(command: AiCommand, input: RunInput, argumentValues: Record<string, string>) {
-  await closeMainWindow();
+  await closeMainWindow({ popToRootType: PopToRootType.Immediate });
   await replaceSelection(command, input, argumentValues);
 }
