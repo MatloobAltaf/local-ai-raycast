@@ -1,4 +1,11 @@
-import { LICENSE_MESSAGE, NOT_INSTALLED_MESSAGE, UNAVAILABLE_MESSAGE } from "./fm/errors";
+import {
+  DEVICE_NOT_ELIGIBLE_MESSAGE,
+  LICENSE_MESSAGE,
+  MODEL_NOT_READY_MESSAGE,
+  MODEL_UNAVAILABLE_MESSAGE,
+  NOT_INSTALLED_MESSAGE,
+  UNAVAILABLE_MESSAGE,
+} from "./fm/errors";
 import type { ProbeResult } from "./fm/process";
 
 export type PreflightCheckId = "binary" | "license" | "available";
@@ -16,10 +23,15 @@ export interface PreflightResult {
   firstFailure?: PreflightCheckId;
 }
 
+export type ModelUnavailableReason =
+  "appleIntelligenceNotEnabled" | "deviceNotEligible" | "modelNotReady" | "unknown" | "helperFailed";
+
+export type ModelAvailability = { status: "available" } | { status: "unavailable"; reason: ModelUnavailableReason };
+
 export interface PreflightProbes {
   binaryExists: boolean;
   license?: ProbeResult;
-  available?: ProbeResult;
+  available?: ModelAvailability;
 }
 
 export const PREFLIGHT_CACHE_TTL_MS = 300_000;
@@ -33,7 +45,15 @@ const TITLES: Record<PreflightCheckId, string> = {
 const FAILED_MESSAGES: Record<PreflightCheckId, string> = {
   binary: NOT_INSTALLED_MESSAGE,
   license: LICENSE_MESSAGE,
-  available: UNAVAILABLE_MESSAGE,
+  available: MODEL_UNAVAILABLE_MESSAGE,
+};
+
+const UNAVAILABLE_REASON_MESSAGES: Record<ModelUnavailableReason, string> = {
+  appleIntelligenceNotEnabled: UNAVAILABLE_MESSAGE,
+  deviceNotEligible: DEVICE_NOT_ELIGIBLE_MESSAGE,
+  modelNotReady: MODEL_NOT_READY_MESSAGE,
+  unknown: MODEL_UNAVAILABLE_MESSAGE,
+  helperFailed: MODEL_UNAVAILABLE_MESSAGE,
 };
 
 const OK_MESSAGES: Record<PreflightCheckId, string> = {
@@ -46,7 +66,7 @@ export function evaluatePreflight(probes: PreflightProbes): PreflightResult {
   const passed: Record<PreflightCheckId, boolean | undefined> = {
     binary: probes.binaryExists,
     license: probes.license && isLicenseAgreed(probes.license),
-    available: probes.available && isModelAvailable(probes.available),
+    available: probes.available?.status === "available",
   };
 
   const checks: PreflightCheck[] = [];
@@ -58,7 +78,7 @@ export function evaluatePreflight(probes: PreflightProbes): PreflightResult {
       checks.push(buildCheck(id, "ok", OK_MESSAGES[id]));
     } else {
       firstFailure = id;
-      checks.push(buildCheck(id, "failed", FAILED_MESSAGES[id]));
+      checks.push(buildCheck(id, "failed", failedMessage(id, probes.available)));
     }
   }
 
@@ -73,10 +93,11 @@ function buildCheck(id: PreflightCheckId, status: PreflightCheck["status"], mess
   return { id, status, title: TITLES[id], message };
 }
 
-function isLicenseAgreed(probe: ProbeResult): boolean {
-  return probe.exitCode === 0 && probe.stdout.startsWith("Agreed");
+function failedMessage(id: PreflightCheckId, available?: ModelAvailability): string {
+  if (id === "available" && available?.status === "unavailable") return UNAVAILABLE_REASON_MESSAGES[available.reason];
+  return FAILED_MESSAGES[id];
 }
 
-function isModelAvailable(probe: ProbeResult): boolean {
-  return probe.exitCode === 0 && /System model available/i.test(probe.stdout);
+function isLicenseAgreed(probe: ProbeResult): boolean {
+  return probe.exitCode === 0 && probe.stdout.startsWith("Agreed");
 }

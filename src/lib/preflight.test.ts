@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { evaluatePreflight, isPreflightCacheFresh } from "./preflight";
+import {
+  DEVICE_NOT_ELIGIBLE_MESSAGE,
+  MODEL_NOT_READY_MESSAGE,
+  MODEL_UNAVAILABLE_MESSAGE,
+  UNAVAILABLE_MESSAGE,
+} from "./fm/errors";
+import { evaluatePreflight, isPreflightCacheFresh, type ModelUnavailableReason } from "./preflight";
 
 const licenseOk = { exitCode: 0, stdout: "Agreed to license FM1 version 1.0 on 21 Oct 2026 at 19:07.\n", stderr: "" };
-const availableOk = { exitCode: 0, stdout: "System model available\n", stderr: "" };
+const availableOk = { status: "available" } as const;
 
 function statuses(result: ReturnType<typeof evaluatePreflight>) {
   return result.checks.map((check) => check.status);
@@ -37,14 +43,27 @@ describe("evaluatePreflight", () => {
     expect(result.checks[1].status).toBe("failed");
   });
 
-  it("fails when the model is not available", () => {
+  it.each<[ModelUnavailableReason, string]>([
+    ["appleIntelligenceNotEnabled", UNAVAILABLE_MESSAGE],
+    ["modelNotReady", MODEL_NOT_READY_MESSAGE],
+    ["deviceNotEligible", DEVICE_NOT_ELIGIBLE_MESSAGE],
+    ["unknown", MODEL_UNAVAILABLE_MESSAGE],
+    ["helperFailed", MODEL_UNAVAILABLE_MESSAGE],
+  ])("fails with the matching message when the model is unavailable because of %s", (reason, message) => {
     const result = evaluatePreflight({
       binaryExists: true,
       license: licenseOk,
-      available: { exitCode: 1, stdout: "", stderr: "Error: ..." },
+      available: { status: "unavailable", reason },
     });
     expect(result.firstFailure).toBe("available");
     expect(statuses(result)).toEqual(["ok", "ok", "failed"]);
+    expect(result.checks[2].message).toBe(message);
+  });
+
+  it("fails availability when the probe is missing", () => {
+    const result = evaluatePreflight({ binaryExists: true, license: licenseOk });
+    expect(result.firstFailure).toBe("available");
+    expect(result.checks[2].message).toBe(MODEL_UNAVAILABLE_MESSAGE);
   });
 });
 

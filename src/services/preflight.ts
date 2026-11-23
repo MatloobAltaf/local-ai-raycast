@@ -2,11 +2,26 @@ import { Cache, showToast, Toast } from "@raycast/api";
 import fs from "node:fs";
 import { FM_PATH } from "../lib/fm/constants";
 import { probeFm } from "../lib/fm/process";
-import { evaluatePreflight, isPreflightCacheFresh, type PreflightResult } from "../lib/preflight";
+import {
+  evaluatePreflight,
+  isPreflightCacheFresh,
+  type ModelAvailability,
+  type ModelUnavailableReason,
+  type PreflightProbes,
+  type PreflightResult,
+} from "../lib/preflight";
+import { modelAvailability } from "swift:../../swift";
 import { launchLocalAiCommand } from "./launch";
 
 const CACHE_KEY = "preflight.v1";
 const PROBE_TIMEOUT_MS = 10_000;
+const SYSTEM_UNAVAILABLE_REASONS: readonly ModelUnavailableReason[] = [
+  "appleIntelligenceNotEnabled",
+  "deviceNotEligible",
+  "modelNotReady",
+  "unknown",
+];
+const HELPER_FAILED: ModelAvailability = { status: "unavailable", reason: "helperFailed" };
 const cache = new Cache();
 
 export async function getPreflight(options: { force?: boolean } = {}): Promise<PreflightResult> {
@@ -42,10 +57,10 @@ export function launchCheckSetup(): Promise<void> {
   return launchLocalAiCommand({ name: "check-setup", title: "Check Setup" });
 }
 
-const PASSING_PROBES = {
+const PASSING_PROBES: PreflightProbes = {
   binaryExists: true,
   license: { exitCode: 0, stdout: "Agreed", stderr: "" },
-  available: { exitCode: 0, stdout: "System model available", stderr: "" },
+  available: { status: "available" },
 };
 
 function isCachedFresh(): boolean {
@@ -64,8 +79,36 @@ async function runProbes(): Promise<PreflightResult> {
   const license = await probeFm(["license", "--status"], PROBE_TIMEOUT_MS);
   const afterLicense = evaluatePreflight({ binaryExists: true, license });
   if (!afterLicense.ok && afterLicense.firstFailure === "license") return afterLicense;
-  const available = await probeFm(["available"], PROBE_TIMEOUT_MS);
+  const available = await probeModelAvailability();
   return evaluatePreflight({ binaryExists: true, license, available });
+}
+
+async function probeModelAvailability(): Promise<ModelAvailability> {
+  try {
+    return toModelAvailability(await withTimeout(modelAvailability(), PROBE_TIMEOUT_MS));
+  } catch {
+    return HELPER_FAILED;
+  }
+}
+
+function toModelAvailability(raw: unknown): ModelAvailability {
+  if (typeof raw !== "object" || raw === null) return HELPER_FAILED;
+  const { status, reason } = raw as { status?: unknown; reason?: unknown };
+  if (status === "available") return { status };
+  if (status === "unavailable" && isSystemUnavailableReason(reason)) return { status, reason };
+  return HELPER_FAILED;
+}
+
+function isSystemUnavailableReason(reason: unknown): reason is ModelUnavailableReason {
+  return SYSTEM_UNAVAILABLE_REASONS.includes(reason as ModelUnavailableReason);
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timed out after ${timeoutMs} ms`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 function binaryExists(): boolean {
