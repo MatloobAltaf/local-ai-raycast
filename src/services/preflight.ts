@@ -6,30 +6,24 @@ import {
   evaluatePreflight,
   isPreflightCacheFresh,
   type ModelAvailability,
-  type ModelUnavailableReason,
+  parseModelAvailability,
   type PreflightProbes,
   type PreflightResult,
 } from "../lib/preflight";
+import { withTimeout } from "../lib/with-timeout";
 import { modelAvailability } from "swift:../../swift";
 import { launchLocalAiCommand } from "./launch";
 
 const CACHE_KEY = "preflight.v1";
 const PROBE_TIMEOUT_MS = 10_000;
-const SYSTEM_UNAVAILABLE_REASONS: readonly ModelUnavailableReason[] = [
-  "appleIntelligenceNotEnabled",
-  "deviceNotEligible",
-  "modelNotReady",
-  "unknown",
-];
-const HELPER_FAILED: ModelAvailability = { status: "unavailable", reason: "helperFailed" };
 const cache = new Cache();
 
 export async function getPreflight(options: { force?: boolean } = {}): Promise<PreflightResult> {
   if (!options.force && isCachedFresh()) return evaluatePreflight(PASSING_PROBES);
 
-  const result = await runProbes();
-  if (result.ok) cache.set(CACHE_KEY, JSON.stringify({ checkedAt: Date.now() }));
-  else invalidatePreflight();
+  const { result, determined } = await runProbes();
+  if (!result.ok) invalidatePreflight();
+  else if (determined) cache.set(CACHE_KEY, JSON.stringify({ checkedAt: Date.now() }));
   return result;
 }
 
@@ -74,41 +68,24 @@ function isCachedFresh(): boolean {
   }
 }
 
-async function runProbes(): Promise<PreflightResult> {
-  if (!binaryExists()) return evaluatePreflight({ binaryExists: false });
+async function runProbes(): Promise<{ result: PreflightResult; determined: boolean }> {
+  if (!binaryExists()) return { result: evaluatePreflight({ binaryExists: false }), determined: true };
   const license = await probeFm(["license", "--status"], PROBE_TIMEOUT_MS);
   const afterLicense = evaluatePreflight({ binaryExists: true, license });
-  if (!afterLicense.ok && afterLicense.firstFailure === "license") return afterLicense;
+  if (!afterLicense.ok && afterLicense.firstFailure === "license") return { result: afterLicense, determined: true };
   const available = await probeModelAvailability();
-  return evaluatePreflight({ binaryExists: true, license, available });
+  return {
+    result: evaluatePreflight({ binaryExists: true, license, available }),
+    determined: available.status !== "undetermined",
+  };
 }
 
 async function probeModelAvailability(): Promise<ModelAvailability> {
   try {
-    return toModelAvailability(await withTimeout(modelAvailability(), PROBE_TIMEOUT_MS));
+    return parseModelAvailability(await withTimeout(modelAvailability(), PROBE_TIMEOUT_MS));
   } catch {
-    return HELPER_FAILED;
+    return { status: "undetermined" };
   }
-}
-
-function toModelAvailability(raw: unknown): ModelAvailability {
-  if (typeof raw !== "object" || raw === null) return HELPER_FAILED;
-  const { status, reason } = raw as { status?: unknown; reason?: unknown };
-  if (status === "available") return { status };
-  if (status === "unavailable" && isSystemUnavailableReason(reason)) return { status, reason };
-  return HELPER_FAILED;
-}
-
-function isSystemUnavailableReason(reason: unknown): reason is ModelUnavailableReason {
-  return SYSTEM_UNAVAILABLE_REASONS.includes(reason as ModelUnavailableReason);
-}
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Timed out after ${timeoutMs} ms`)), timeoutMs);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 function binaryExists(): boolean {
