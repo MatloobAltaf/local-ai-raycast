@@ -22,8 +22,8 @@ export async function getPreflight(options: { force?: boolean } = {}): Promise<P
   if (!options.force && isCachedFresh()) return evaluatePreflight(PASSING_PROBES);
 
   const { result, determined } = await runProbes();
-  if (!result.ok) invalidatePreflight();
-  else if (determined) cache.set(CACHE_KEY, JSON.stringify({ checkedAt: Date.now() }));
+  if (result.ok && determined) cache.set(CACHE_KEY, JSON.stringify({ checkedAt: Date.now() }));
+  else invalidatePreflight();
   return result;
 }
 
