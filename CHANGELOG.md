@@ -1,6 +1,11 @@
 # Local AI Changelog
 
-## [Initial Version] - {PR_MERGE_DATE}
+## [Fix Apple Intelligence Detection] - {PR_MERGE_DATE}
+
+- Check Setup no longer reports Apple Intelligence as off when it is on. The check now asks macOS directly.
+- Check Setup now tells you when the on-device model is still getting ready or when this Mac is not eligible.
+
+## [Initial Version] - 2026-11-17
 
 - Custom AI commands with prompts, icons, creativity levels and replace or window output
 - Per-command hotkeys through Quicklinks

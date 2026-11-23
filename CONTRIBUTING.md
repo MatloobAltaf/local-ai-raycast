@@ -16,6 +16,8 @@ Don't include private text. Replace it with a short example that shows the same 
 
 ## Development setup
 
+Building needs Xcode installed, because the extension compiles a small Swift helper.
+
 ```
 npm install
 npm run dev
