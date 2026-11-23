@@ -57,9 +57,9 @@ describe("mapFmFailure", () => {
   it.each([
     "Error: Private Cloud Compute is not available in this context. Please use the Terminal app.",
     "Private Cloud Compute is not available in this context. Please use the Terminal app.",
-  ])("maps Private Cloud Compute unavailable to a model error: %s", (stderr) => {
+  ])("maps Private Cloud Compute unavailable to its own error: %s", (stderr) => {
     const error = mapFmFailure({ exitCode: 1, stderr, model: "pcc" });
-    expect(error.kind).toBe("invalidModel");
+    expect(error.kind).toBe("cloudModelUnavailable");
     expect(error.message).toBe(PCC_UNAVAILABLE_MESSAGE);
     expect(SETUP_ERROR_KINDS.has(error.kind)).toBe(false);
   });
