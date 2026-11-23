@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LICENSE_MESSAGE, mapFmFailure, SETUP_ERROR_KINDS, tooLongMessage } from "./errors";
+import { LICENSE_MESSAGE, mapFmFailure, PCC_UNAVAILABLE_MESSAGE, SETUP_ERROR_KINDS, tooLongMessage } from "./errors";
 
 describe("mapFmFailure", () => {
   it("maps context overflow", () => {
@@ -50,6 +50,22 @@ describe("mapFmFailure", () => {
 
   it("maps unavailable", () => {
     const error = mapFmFailure({ exitCode: 1, stderr: "Error: Apple Intelligence is not enabled" });
+    expect(error.kind).toBe("unavailable");
+    expect(error.message).toBe("Turn on Apple Intelligence in System Settings");
+  });
+
+  it.each([
+    "Error: Private Cloud Compute is not available in this context. Please use the Terminal app.",
+    "Private Cloud Compute is not available in this context. Please use the Terminal app.",
+  ])("maps Private Cloud Compute unavailable to its own error: %s", (stderr) => {
+    const error = mapFmFailure({ exitCode: 1, stderr, model: "pcc" });
+    expect(error.kind).toBe("cloudModelUnavailable");
+    expect(error.message).toBe(PCC_UNAVAILABLE_MESSAGE);
+    expect(SETUP_ERROR_KINDS.has(error.kind)).toBe(false);
+  });
+
+  it("keeps a generic not available error as unavailable", () => {
+    const error = mapFmFailure({ exitCode: 1, stderr: "Error: The model is not available" });
     expect(error.kind).toBe("unavailable");
     expect(error.message).toBe("Turn on Apple Intelligence in System Settings");
   });

@@ -56,6 +56,16 @@ describe("explainFmError", () => {
     expect(result.explanation).toBe("The on-device model returned an error.");
   });
 
+  it("points to the system model when the cloud model cannot run", () => {
+    const result = explainFmError(
+      new FmError("cloudModelUnavailable", "cloud message", "Error: Private Cloud Compute is not available"),
+    );
+    expect(result).toEqual({
+      title: "cloud message",
+      explanation: "Set the model to system in the command or in the Local AI preferences.",
+    });
+  });
+
   it("appends the first stderr line for an invalid model", () => {
     const result = explainFmError(new FmError("invalidModel", "Bad model", "Error: 'pcc' is invalid\nmore"));
     expect(result.explanation).toBe("The on-device model returned an error. Error: 'pcc' is invalid");
