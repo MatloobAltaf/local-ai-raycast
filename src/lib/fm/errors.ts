@@ -40,6 +40,8 @@ export const MODEL_NOT_READY_MESSAGE =
   "The on-device model is not ready yet. It may still be downloading. Try again in a few minutes.";
 export const DEVICE_NOT_ELIGIBLE_MESSAGE = "This Mac does not support Apple Intelligence";
 export const MODEL_UNAVAILABLE_MESSAGE = "Apple Intelligence is not available. Check System Settings and try again.";
+export const PCC_UNAVAILABLE_MESSAGE =
+  "Private Cloud Compute can't be used from Raycast. Edit the command and pick another model.";
 export const GUARDRAIL_MESSAGE = "The on-device model declined this text.";
 
 export const SETUP_ERROR_KINDS: ReadonlySet<FmErrorKind> = new Set<FmErrorKind>([
@@ -50,6 +52,7 @@ export const SETUP_ERROR_KINDS: ReadonlySet<FmErrorKind> = new Set<FmErrorKind>(
 
 const CONTEXT_OVERFLOW_PATTERN = /exceeded the model's context size/i;
 const INVALID_MODEL_PATTERN = /is invalid for '-m <model>'/i;
+const PCC_UNAVAILABLE_PATTERN = /Private Cloud Compute is not available/i;
 const GUARDRAIL_PATTERN = /guardrail|unsafe|sensitive content/i;
 const UNAVAILABLE_PATTERN = /apple intelligence|not available|unavailable|not enabled|not ready/i;
 
@@ -81,6 +84,7 @@ export function mapFmFailure(failure: FmFailure): FmError {
       stderr,
     );
   }
+  if (PCC_UNAVAILABLE_PATTERN.test(stderr)) return new FmError("invalidModel", PCC_UNAVAILABLE_MESSAGE, stderr);
   if (GUARDRAIL_PATTERN.test(stderr)) return new FmError("guardrail", GUARDRAIL_MESSAGE, stderr);
   if (UNAVAILABLE_PATTERN.test(stderr)) return new FmError("unavailable", UNAVAILABLE_MESSAGE, stderr);
 
