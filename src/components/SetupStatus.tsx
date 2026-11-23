@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
-import type { PreflightCheck, PreflightCheckId, PreflightResult } from "../lib/preflight";
+import { canOpenSettingsFor, type PreflightCheck, type PreflightResult } from "../lib/preflight";
 import { AUTHOR_URL } from "../lib/feedback";
 import { getModels } from "../services/models";
 import { FeedbackAction } from "./FeedbackAction";
@@ -50,7 +50,7 @@ export function SetupStatus(props: {
             subtitle={check.message}
             actions={
               <ActionPanel>
-                {check.status === "failed" && checkActions(check.id)}
+                {check.status === "failed" && checkActions(check)}
                 {recheck}
               </ActionPanel>
             }
@@ -101,8 +101,8 @@ export function SetupStatus(props: {
   );
 }
 
-function checkActions(id: PreflightCheckId) {
-  if (id === "license") {
+function checkActions(check: PreflightCheck) {
+  if (check.id === "license") {
     return (
       <>
         <Action.CopyToClipboard title="Copy Command" content={LICENSE_COMMAND} />
@@ -110,7 +110,7 @@ function checkActions(id: PreflightCheckId) {
       </>
     );
   }
-  if (id === "available") {
+  if (check.id === "available" && canOpenSettingsFor(check.reason)) {
     return <Action.Open title="Open System Settings" target={APPLE_INTELLIGENCE_URL} />;
   }
   return null;

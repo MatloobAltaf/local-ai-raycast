@@ -36,6 +36,10 @@ export interface FmFailure {
 export const NOT_INSTALLED_MESSAGE = "Requires macOS 27 with Apple Intelligence";
 export const LICENSE_MESSAGE = "Open Terminal and run `fm license`. If that fails, try `sudo fm license`.";
 export const UNAVAILABLE_MESSAGE = "Turn on Apple Intelligence in System Settings";
+export const MODEL_NOT_READY_MESSAGE =
+  "The on-device model is not ready yet. It may still be downloading. Try again in a few minutes.";
+export const DEVICE_NOT_ELIGIBLE_MESSAGE = "This Mac does not support Apple Intelligence";
+export const MODEL_UNAVAILABLE_MESSAGE = "Apple Intelligence is not available. Check System Settings and try again.";
 export const GUARDRAIL_MESSAGE = "The on-device model declined this text.";
 
 export const SETUP_ERROR_KINDS: ReadonlySet<FmErrorKind> = new Set<FmErrorKind>([
